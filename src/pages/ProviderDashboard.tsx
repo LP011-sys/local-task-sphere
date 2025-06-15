@@ -13,6 +13,12 @@ import { Progress } from "@/components/ui/progress";
 import { Star, ArrowRight, Repeat2, Wallet, Calendar, Coins } from "lucide-react";
 import { format } from "date-fns";
 import { useTaskStatusMutation } from "@/hooks/useTaskStatusMutation";
+import { formatDate, formatTimeRemaining } from "@/lib/format";
+import { TaskStatus } from "@/types/shared";
+import MyOffersList from "./ProviderDashboard/MyOffersList";
+import AcceptedTasksList from "./ProviderDashboard/AcceptedTasksList";
+import CompletedTasksList from "./ProviderDashboard/CompletedTasksList";
+import EarningsSummary from "./ProviderDashboard/EarningsSummary";
 
 // --------- MOCK DATA ---------
 const MOCK_OFFERS = [
@@ -214,171 +220,43 @@ export default function ProviderDashboard() {
           <TabsTrigger value="earnings"><Wallet className="mr-1 w-4 h-4" /> Earnings</TabsTrigger>
         </TabsList>
 
-        {/* ---- My Offers ---- */}
         <TabsContent value="offers">
-          {offers.length === 0 && (
-            <Card className="p-8 text-center">You haven&apos;t submitted any offers yet.</Card>
-          )}
-          <div className="flex flex-col gap-3">
-            {offers.map(offer => (
-              <Card key={offer.id} className="flex flex-col md:flex-row md:items-center justify-between gap-2 p-4">
-                <div>
-                  <div className="font-semibold">{offer.title}</div>
-                  <div className="text-sm text-muted-foreground flex gap-2 items-center">
-                    <span>€{offer.price} offered</span>
-                    <span
-                      className={`px-2 py-0.5 rounded text-xs font-semibold ${STATUS_COLORS[offer.status]}`}
-                    >
-                      {offer.status}
-                    </span>
-                    {offer.status === "Pending" && offer.offer_deadline && (
-                      <span className="ml-2 text-xs text-gray-500">Time left: {formatTimeRemaining(offer.offer_deadline)}</span>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  {offer.status === "Pending" && (
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => cancelOffer(offer.id)}
-                    >Cancel Offer</Button>
-                  )}
-                </div>
-              </Card>
-            ))}
-          </div>
+          <MyOffersList
+            offers={offers}
+            cancelOffer={cancelOffer}
+            formatTimeRemaining={formatTimeRemaining}
+            STATUS_COLORS={STATUS_COLORS}
+          />
         </TabsContent>
 
-        {/* ---- Accepted Tasks ---- */}
         <TabsContent value="accepted">
-          {accepted.length === 0 && (
-            <Card className="p-8 text-center">You have no tasks in progress.</Card>
-          )}
-          <div className="flex flex-col gap-3">
-            {accepted.map(task => (
-              <Card key={task.id} className="flex flex-col md:flex-row md:items-center justify-between gap-2 p-4">
-                <div>
-                  <div className="font-semibold">{task.title}</div>
-                  <div className="text-sm text-muted-foreground flex gap-2 items-center">
-                    <span>
-                      Deadline: {formatDate(task.deadline)}
-                    </span>
-                    {statusBadge(task.status)}
-                    <span className={`ml-2 text-xs px-2 py-0.5 rounded font-semibold ${
-                      getPaymentStatus(task.id) === "Prepaid"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-yellow-100 text-yellow-800"
-                    }`
-                    }>
-                      {getPaymentStatus(task.id)}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  {task.status === "open" && (
-                    <Button
-                      size="sm"
-                      onClick={() => updateTaskStatus(task.id, "in_progress")}
-                      disabled={taskStatusMutation.isPending}
-                    >
-                      Mark as Started
-                    </Button>
-                  )}
-                  {task.status === "in_progress" && (
-                    <Button
-                      size="sm"
-                      onClick={() => updateTaskStatus(task.id, "done")}
-                      disabled={taskStatusMutation.isPending}
-                    >
-                      Mark as Done
-                    </Button>
-                  )}
-                </div>
-              </Card>
-            ))}
-          </div>
+          <AcceptedTasksList
+            accepted={accepted}
+            updateTaskStatus={updateTaskStatus}
+            statusBadge={statusBadge}
+            getPaymentStatus={getPaymentStatus}
+            taskStatusMutation={taskStatusMutation}
+            formatDate={formatDate}
+          />
         </TabsContent>
 
-        {/* ---- Completed Tasks ---- */}
         <TabsContent value="completed">
-          {completed.length === 0 && (
-            <Card className="p-8 text-center">You haven&apos;t completed any tasks yet.</Card>
-          )}
-          <div className="flex flex-col gap-3">
-            {completed.map(task => (
-              <Card key={task.id} className="flex flex-col md:flex-row md:items-center justify-between gap-2 p-4">
-                <div>
-                  <div className="font-semibold">{task.title}</div>
-                  <div className="text-sm text-muted-foreground flex gap-2 items-center">
-                    <span>Net Earned: €{task.net}</span>
-                    <span className="flex items-center gap-1">
-                      {[...Array(task.rating)].map((_, i) => (
-                        <Star key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                      ))}
-                    </span>
-                    <span>
-                      Completed: {formatDate(task.completed)}
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex items-center gap-1"
-                  >
-                    <Repeat2 className="w-4 h-4" /> Rebook Customer
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
+          <CompletedTasksList completed={completed} formatDate={formatDate} />
         </TabsContent>
 
-        {/* ---- Earnings ---- */}
         <TabsContent value="earnings">
-          <Card className="mb-4 flex flex-col sm:flex-row items-center justify-between gap-4 p-4">
-            <div>
-              <div className="font-bold text-lg flex items-center gap-2">
-                <Coins className="w-5 h-5 text-green-600" />
-                €{last7.reduce((acc, e) => acc + e.net, 0).toFixed(2)} <span className="text-xs text-gray-600 font-normal ml-1">last 7 days</span>
-              </div>
-              <div className="font-bold text-lg flex items-center gap-2">
-                <Coins className="w-5 h-5 text-yellow-600" />
-                €{last30.reduce((acc, e) => acc + e.net, 0).toFixed(2)} <span className="text-xs text-gray-600 font-normal ml-1">last 30 days</span>
-              </div>
-            </div>
-            <div>
-              <div className="font-medium">Pending Payouts: <span className="text-primary">€{PENDING_PAYOUT}</span></div>
-              <div className="font-medium">Completed Tasks: <span className="text-primary">{MOCK_EARNINGS.length}</span></div>
-            </div>
-          </Card>
-          <div>
-            <div className="font-bold mb-2">Payout Breakdown</div>
-            <div className="flex flex-col gap-2">
-              {MOCK_EARNINGS.map(e => (
-                <Card key={e.id} className="flex flex-col md:flex-row md:items-center justify-between gap-2 p-4">
-                  <div>
-                    <div className="font-semibold">{e.title}</div>
-                    <div className="text-sm text-muted-foreground flex gap-2 items-center">
-                      <span>Date: {formatDate(e.date)}</span>
-                      <span>Gross: €{e.gross}</span>
-                      <span>Fee: €{e.fee}</span>
-                      <span>Net: €{e.net}</span>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </div>
+          <EarningsSummary
+            last7={last7}
+            last30={last30}
+            pendingPayout={PENDING_PAYOUT}
+            MOCK_EARNINGS={MOCK_EARNINGS}
+            formatDate={formatDate}
+          />
         </TabsContent>
       </Tabs>
     </div>
   );
 }
-
-// --- UTILITIES ---
 
 function formatDate(date: string) {
   try {
