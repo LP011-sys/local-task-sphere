@@ -63,6 +63,51 @@ export type Database = {
         }
         Relationships: []
       }
+      offers: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          price: string | null
+          provider_id: string
+          status: string
+          task_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          price?: string | null
+          provider_id: string
+          status?: string
+          task_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          price?: string | null
+          provider_id?: string
+          status?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offers_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offers_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "Tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spatial_ref_sys: {
         Row: {
           auth_name: string | null
