@@ -8,6 +8,7 @@ import { useCurrentUserProfile, useUpdateCurrentUserProfile } from "@/hooks/useC
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
+// Supported languages
 const LANGUAGES = [
   { label: "English", value: "en" },
   { label: "Serbian", value: "sr" },
@@ -15,22 +16,33 @@ const LANGUAGES = [
   // Add more as needed
 ];
 
+type NotificationPreferences = {
+  email_notifications?: boolean
+};
+
 type FormValues = {
   name: string,
   email: string,
   bio: string,
   language: string,
-  notification_preferences: {
-    email_notifications?: boolean
-  },
+  notification_preferences: NotificationPreferences,
   profile_photo?: FileList
 };
 
-function getUserId() {
-  // This method assumes Supabase Auth is used; adjust as needed!
-  const auth = supabase.auth.getUser();
-  // This will not work directly outside of async. You'll handle it in useEffect.
-  return auth;
+function coerceNotificationPref(dbValue: any): NotificationPreferences {
+  if (
+    dbValue &&
+    typeof dbValue === "object" &&
+    !Array.isArray(dbValue)
+  ) {
+    return {
+      email_notifications:
+        typeof dbValue.email_notifications === "boolean"
+          ? dbValue.email_notifications
+          : true,
+    };
+  }
+  return { email_notifications: true };
 }
 
 const ProfileSettings: React.FC = () => {
@@ -41,7 +53,6 @@ const ProfileSettings: React.FC = () => {
 
   // Get current user id on mount
   React.useEffect(() => {
-    // Supabase Auth: get current user ID
     (async () => {
       const { data } = await supabase.auth.getUser();
       if (!data?.user) {
@@ -74,7 +85,7 @@ const ProfileSettings: React.FC = () => {
         email: data.email || "",
         bio: data.bio || "",
         language: data.language || "en",
-        notification_preferences: data.notification_preferences || { email_notifications: true },
+        notification_preferences: coerceNotificationPref(data.notification_preferences),
         // profile_photo left empty
       });
     }
@@ -109,7 +120,6 @@ const ProfileSettings: React.FC = () => {
       photoUrl = publicUrlData.publicUrl;
     }
 
-    // Update profile fields in Supabase
     updateProfile.mutate({
       name: values.name,
       bio: values.bio,
@@ -144,7 +154,6 @@ const ProfileSettings: React.FC = () => {
     <div className="max-w-xl mx-auto bg-white rounded-lg shadow-md p-6 my-8 sm:my-10">
       <h1 className="text-2xl font-bold mb-4">Profile Settings</h1>
       <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-
         {/* --- Account Info Section --- */}
         <div>
           <h2 className="font-semibold text-lg mb-2">Account Info</h2>
@@ -175,7 +184,6 @@ const ProfileSettings: React.FC = () => {
             </div>
           </div>
         </div>
-
         {/* --- Preferences Section --- */}
         <div>
           <h2 className="font-semibold text-lg mb-2">Preferences</h2>
@@ -217,10 +225,9 @@ const ProfileSettings: React.FC = () => {
             </div>
           </div>
         </div>
-
         {/* --- Save Button --- */}
         <div className="flex justify-end">
-          <Button type="submit" disabled={updateProfile.isLoading}>Save Changes</Button>
+          <Button type="submit" disabled={updateProfile.status === "pending"}>Save Changes</Button>
         </div>
       </form>
     </div>
