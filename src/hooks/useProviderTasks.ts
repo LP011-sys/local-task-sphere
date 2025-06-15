@@ -2,18 +2,25 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-// 1. Shallow Task type (only flat fields needed in the UI & filtering)
+// 1. Shallow Task type (matching Supabase table structure)
 type Task = {
   id: string;
-  title: string;
   description: string;
-  budget: number;
-  category?: string;
-  boost?: string;
-  location?: string;
+  category: string;
+  boost?: string; // derived from boost_status
+  location?: any; // can be JSON or string depending on usage
+  deadline?: string;
+  offer?: string;
+  price?: string;
+  type?: string;
+  recurring?: boolean;
+  acceptance_deadline?: string;
+  suggested_price?: string;
+  created_at?: string;
+  images?: any;
 };
 
-// 2. Fetch function - always cast to Task[]
+// 2. Fetch function - no type cast, explicit shape conversion
 const fetchProviderTasks = async (): Promise<Task[]> => {
   const { data, error } = await supabase
     .from("Tasks")
@@ -21,8 +28,23 @@ const fetchProviderTasks = async (): Promise<Task[]> => {
     .eq("status", "open");
 
   if (error) throw error;
-  // Type assertion/cast here is deliberate to prevent deep inference
-  return (data ?? []) as Task[];
+  // Map each row into the Task shape, manually mapping/renaming as needed
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    description: row.description,
+    category: row.category,
+    boost: row.boost_status ?? undefined,
+    location: row.location ?? undefined,
+    deadline: row.deadline ?? undefined,
+    offer: row.offer ?? undefined,
+    price: row.price ?? undefined,
+    type: row.type ?? undefined,
+    recurring: row.recurring ?? undefined,
+    acceptance_deadline: row.acceptance_deadline ?? undefined,
+    suggested_price: row.suggested_price ?? undefined,
+    created_at: row.created_at ?? undefined,
+    images: row.images ?? undefined,
+  }));
 };
 
 // 3. React Query hook for provider tasks
@@ -48,10 +70,14 @@ export function useProviderTasks(
         result = result.filter((task) => task.category === category);
       }
       if (hasValidMin) {
-        result = result.filter((task) => Number(task.budget) >= minBudget);
+        result = result.filter(
+          (task) => Number(task.price) >= minBudget
+        );
       }
       if (hasValidMax) {
-        result = result.filter((task) => Number(task.budget) <= maxBudget);
+        result = result.filter(
+          (task) => Number(task.price) <= maxBudget
+        );
       }
 
       // Search term optimization
@@ -59,7 +85,7 @@ export function useProviderTasks(
       if (trimmedSearch !== "") {
         result = result.filter(
           (task) =>
-            (task.title?.toLowerCase().includes(trimmedSearch) ?? false) ||
+            (task.offer?.toLowerCase().includes(trimmedSearch) ?? false) ||
             (task.description?.toLowerCase().includes(trimmedSearch) ?? false)
         );
       }
