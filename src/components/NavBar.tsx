@@ -3,10 +3,34 @@ import React from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import LanguagePicker from "./LanguagePicker";
 import { roles } from "./RoleSelector";
-import { User, List, Settings, FileText, Folder, Users, Calendar, MessageSquare, FolderPlus, DollarSign, FilePlus, CircleUserRound } from "lucide-react";
+import { User, List, Settings, FileText, Folder, Users, MessageSquare, FolderPlus, DollarSign, FilePlus, CircleUserRound } from "lucide-react";
 
-// Make sure to use the translation keys as a type
-type TranslationKey = keyof typeof import("@/contexts/I18nContext").translations["en"];
+// Locally define TranslationKey to match I18nContext.tsx
+type TranslationKey =
+  | "customer"
+  | "provider"
+  | "admin"
+  | "dashboard"
+  | "postTask"
+  | "myTasks"
+  | "offers"
+  | "messages"
+  | "profile"
+  | "settings"
+  | "taskFeed"
+  | "myOffers"
+  | "acceptedTasks"
+  | "earnings"
+  | "userManager"
+  | "taskOversight"
+  | "disputes"
+  | "reports"
+  | "broadcasts"
+  | "categoryManager"
+  | "selectRole"
+  | "appName"
+  | "language";
+
 type Role = "customer" | "provider" | "admin";
 
 interface NavBarProps {
@@ -16,33 +40,33 @@ interface NavBarProps {
   onRoleChange: (role: Role) => void;
 }
 
-// Explicitly type menuConfig to use TranslationKey for labelKey
+// Re-type menuConfig and ensure the keys are valid
 const menuConfig: Record<Role, { key: string; labelKey: TranslationKey; icon: React.ReactNode }[]> = {
   customer: [
-    { key: "dashboard", labelKey: "dashboard", icon: <List size={20}/> },
-    { key: "post-task", labelKey: "postTask", icon: <FilePlus size={20}/> },
-    { key: "my-tasks", labelKey: "myTasks", icon: <Folder size={20}/> },
-    { key: "offers", labelKey: "offers", icon: <FileText size={20}/> },
-    { key: "messages", labelKey: "messages", icon: <MessageSquare size={20}/> },
-    { key: "profile", labelKey: "profile", icon: <User size={20}/> },
-    { key: "settings", labelKey: "settings", icon: <Settings size={20}/> },
+    { key: "dashboard", labelKey: "dashboard", icon: <List size={20} /> },
+    { key: "post-task", labelKey: "postTask", icon: <FilePlus size={20} /> },
+    { key: "my-tasks", labelKey: "myTasks", icon: <Folder size={20} /> },
+    { key: "offers", labelKey: "offers", icon: <FileText size={20} /> },
+    { key: "messages", labelKey: "messages", icon: <MessageSquare size={20} /> },
+    { key: "profile", labelKey: "profile", icon: <User size={20} /> },
+    { key: "settings", labelKey: "settings", icon: <Settings size={20} /> },
   ],
   provider: [
-    { key: "task-feed", labelKey: "taskFeed", icon: <List size={20}/> },
-    { key: "my-offers", labelKey: "myOffers", icon: <FileText size={20}/> },
-    { key: "accepted-tasks", labelKey: "acceptedTasks", icon: <FolderPlus size={20}/> },
-    { key: "messages", labelKey: "messages", icon: <MessageSquare size={20}/> },
-    { key: "earnings", labelKey: "earnings", icon: <DollarSign size={20}/> },
-    { key: "profile", labelKey: "profile", icon: <User size={20}/> },
-    { key: "settings", labelKey: "settings", icon: <Settings size={20}/> },
+    { key: "task-feed", labelKey: "taskFeed", icon: <List size={20} /> },
+    { key: "my-offers", labelKey: "myOffers", icon: <FileText size={20} /> },
+    { key: "accepted-tasks", labelKey: "acceptedTasks", icon: <FolderPlus size={20} /> },
+    { key: "messages", labelKey: "messages", icon: <MessageSquare size={20} /> },
+    { key: "earnings", labelKey: "earnings", icon: <DollarSign size={20} /> },
+    { key: "profile", labelKey: "profile", icon: <User size={20} /> },
+    { key: "settings", labelKey: "settings", icon: <Settings size={20} /> },
   ],
   admin: [
-    { key: "user-manager", labelKey: "userManager", icon: <Users size={20}/> },
-    { key: "task-oversight", labelKey: "taskOversight", icon: <Folder size={20}/> },
-    { key: "disputes", labelKey: "disputes", icon: <CircleUserRound size={20}/> },
-    { key: "reports", labelKey: "reports", icon: <FileText size={20}/> },
-    { key: "broadcasts", labelKey: "broadcasts", icon: <MessageSquare size={20}/> },
-    { key: "category-manager", labelKey: "categoryManager", icon: <FolderPlus size={20}/> },
+    { key: "user-manager", labelKey: "userManager", icon: <Users size={20} /> },
+    { key: "task-oversight", labelKey: "taskOversight", icon: <Folder size={20} /> },
+    { key: "disputes", labelKey: "disputes", icon: <CircleUserRound size={20} /> },
+    { key: "reports", labelKey: "reports", icon: <FileText size={20} /> },
+    { key: "broadcasts", labelKey: "broadcasts", icon: <MessageSquare size={20} /> },
+    { key: "category-manager", labelKey: "categoryManager", icon: <FolderPlus size={20} /> },
   ]
 };
 
@@ -76,7 +100,8 @@ export default function NavBar({ role, activeTab, onTabChange, onRoleChange }: N
               onChange={e => onRoleChange(e.target.value as Role)}
               value={role}
             >
-              {roles.map(r=>(
+              {/* For roles, ensure the type matches TranslationKey */}
+              {roles.map(r => (
                 <option key={r.role} value={r.role}>{t(r.role as TranslationKey)}</option>
               ))}
             </select>
