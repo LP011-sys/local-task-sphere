@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
@@ -44,6 +44,35 @@ const BOOST_ORDER = {
   undefined: 2,
 };
 
+/** Extracted query logic to avoid TS2589 */
+async function fetchProviderTasks(
+  category: string,
+  budgetMin: string,
+  budgetMax: string,
+  search: string
+): Promise<any[]> {
+  let query = supabase
+    .from("Tasks")
+    .select("*")
+    .eq("status", "open");
+
+  if (category) query = query.eq("category", category);
+  if (budgetMin !== "") query = query.gte("price", budgetMin);
+  if (budgetMax !== "") query = query.lte("price", budgetMax);
+  if (search.trim() !== "") {
+    query = query.or(`offer.ilike.%${search.trim()}%,description.ilike.%${search.trim()}%`);
+  }
+  const { data, error } = await query;
+  if (error) throw error;
+  const result = data as any[];
+  result.sort(
+    (a, b) =>
+      (BOOST_ORDER[a.boost_status as keyof typeof BOOST_ORDER] ?? 2) -
+      (BOOST_ORDER[b.boost_status as keyof typeof BOOST_ORDER] ?? 2)
+  );
+  return result;
+}
+
 export default function ProviderTaskFeed() {
   // Filter state
   const [category, setCategory] = useState<string>("");
@@ -51,7 +80,7 @@ export default function ProviderTaskFeed() {
   const [budgetMax, setBudgetMax] = useState<string>("");
   const [search, setSearch] = useState<string>("");
 
-  // React Query: fetch open tasks from Supabase
+  // Use React Query, referencing the extracted function
   const { data: tasks, isLoading, refetch, error } = useQuery<any[], Error>({
     queryKey: [
       "providerFeedTasks",
@@ -60,42 +89,10 @@ export default function ProviderTaskFeed() {
       budgetMax,
       search,
     ],
-    queryFn: async (): Promise<any[]> => {
-      let query = supabase
-        .from("Tasks")
-        .select("*")
-        .eq("status", "open");
-
-      // Filter by category
-      if (category) query = query.eq("category", category);
-      // Filter by budget min (numeric)
-      if (budgetMin !== "") query = query.gte("price", budgetMin);
-      if (budgetMax !== "") query = query.lte("price", budgetMax);
-      // Filter by search (offer/description)
-      if (search.trim() !== "") {
-        query = query.or(`offer.ilike.%${search.trim()}%,description.ilike.%${search.trim()}%`);
-      }
-
-      // Fetch
-      const { data, error } = await query;
-      if (error) throw error;
-
-      // Defensive: treat as any[] immediately to avoid deep instantiation
-      const result = data as any[];
-
-      // Order by boost_status: 24h > 8h > none
-      result.sort(
-        (a, b) =>
-          (BOOST_ORDER[a.boost_status as keyof typeof BOOST_ORDER] ?? 2) -
-          (BOOST_ORDER[b.boost_status as keyof typeof BOOST_ORDER] ?? 2)
-      );
-
-      return result;
-    },
+    queryFn: () => fetchProviderTasks(category, budgetMin, budgetMax, search),
     staleTime: 120_000,
   });
 
-  // Responsive filters bar
   return (
     <div className="max-w-3xl mx-auto px-2 py-6">
       <h1 className="text-2xl font-bold mb-4 text-primary text-center">
