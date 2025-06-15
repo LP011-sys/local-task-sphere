@@ -84,11 +84,36 @@ function RoleHome({ initialRole = "customer" }: { initialRole?: Role }) {
 
 export default function Index() {
   const [selectedRole, setSelectedRole] = React.useState<"customer" | "provider" | "admin" | null>(null);
+  const [authed, setAuthed] = React.useState(false);
+
+  React.useEffect(() => {
+    // Listen for login status
+    const sub = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthed(!!session?.user);
+    });
+    supabase.auth.getUser().then(({ data }) => {
+      setAuthed(!!data?.user);
+    });
+    return () => {
+      sub.data.subscription?.unsubscribe?.();
+    };
+  }, []);
 
   return (
     <I18nProvider>
       <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-slate-100">
-        {!selectedRole ? (
+        {!authed ? (
+          <div className="flex flex-col items-center justify-center min-h-screen">
+            <h1 className="text-5xl font-bold mb-6 text-primary drop-shadow">{'Task Hub'}</h1>
+            <RoleSelector value="customer" onChange={role => setSelectedRole(role)} />
+            <a
+              href="/auth"
+              className="mt-6 text-blue-700 underline underline-offset-2 font-semibold"
+            >
+              Log in / Sign up →
+            </a>
+          </div>
+        ) : !selectedRole ? (
           <div className="flex flex-col items-center justify-center min-h-screen">
             <h1 className="text-5xl font-bold mb-6 text-primary drop-shadow">{'Task Hub'}</h1>
             <RoleSelector value="customer" onChange={role => setSelectedRole(role)} />

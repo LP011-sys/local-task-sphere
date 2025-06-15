@@ -14,6 +14,7 @@ import AdminReportsPage from "@/pages/admin/AdminReportsPage";
 import AdminAnalyticsPage from "@/pages/admin/AdminAnalyticsPage";
 import AdminPushPage from "@/pages/admin/AdminPushPage";
 import PremiumPackages from "./pages/PremiumPackages";
+import AuthPage from "@/pages/AuthPage";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
+          <Route path="/auth" element={<AuthPage />} />
           {/* ADMIN dashboard (protected!) with nested routes */}
           <Route path="/admin" element={<AdminDashboard />}>
             {/* Default to /admin/users */}
@@ -38,6 +40,7 @@ const App = () => (
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="/premium" element={<PremiumPackages />} />
+          <Route path="/ProfileSettings" element={React.createElement(require("./pages/ProfileSettings").default)} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
