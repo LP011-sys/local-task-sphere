@@ -40,13 +40,10 @@ export default function MyFavoritesPage() {
   React.useEffect(() => {
     if (!profile?.id) return;
     setLoading(true);
-    // Use correct join hint for provider relation. The Supabase JS client only understands
-    // "provider:app_users(id,name,avatar_url)" if favorites.provider_id -> app_users.id exists.
+    // CORRECT join hint for provider relation
     supabase
       .from("favorites")
-      .select(
-        "id, provider_id, created_at, provider:app_users(id,name,avatar_url)"
-      )
+      .select("id, provider_id, created_at, provider:app_users!favorites_provider_id_fkey(id,name,avatar_url)")
       .eq("customer_id", profile.id)
       .order("created_at", { ascending: false })
       .then(({ data }) => {

@@ -47,16 +47,7 @@ function RoleHome({ initialRole = "customer" }: { initialRole?: Role }) {
           case "settings": return <ProviderSettings />;
           default: return <ProviderTaskFeed />;
         }
-      case "admin":
-        switch (activeTab) {
-          case "user-manager": return <AdminUserManager />;
-          case "task-oversight": return <AdminTaskOversight />;
-          case "disputes": return <AdminDisputes />;
-          case "reports": return <AdminReports />;
-          case "broadcasts": return <AdminBroadcasts />;
-          case "category-manager": return <AdminCategoryManager />;
-          default: return <AdminUserManager />;
-        }
+      // Hide admin tabs in Index - admin dashboard is routed at /admin
       default:
         return <div />;
     }
