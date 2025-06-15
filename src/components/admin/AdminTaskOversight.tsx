@@ -1,6 +1,7 @@
 
 import React, { useState } from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { TableHeader, TableHead, TableRow, TableCell, TableBody } from "@/components/ui/table";
+import { AdminTable } from "./AdminTable";
 import { Button } from "@/components/ui/button";
 import { mockTasks } from "@/mocks/mockTasks";
 
@@ -11,13 +12,13 @@ export default function AdminTaskOversight() {
     <div>
       <div className="mb-4 flex gap-2 items-end">
         <label className="font-semibold">Filter by:</label>
-        <select value={filter} onChange={e=>setFilter(e.target.value as any)} className="border rounded px-2 py-1">
+        <select value={filter} onChange={e=>setFilter(e.target.value as any)} className="border rounded px-2 py-1 bg-background">
           <option value="all">All</option>
           <option value="active">Active</option>
           <option value="flagged">Flagged</option>
         </select>
       </div>
-      <Table>
+      <AdminTable emptyMessage={!tasks.length ? "No tasks found for the selected filter." : undefined}>
         <TableHeader>
           <TableRow>
             <TableHead>Title</TableHead>
@@ -45,7 +46,7 @@ export default function AdminTaskOversight() {
             </TableRow>
           ))}
         </TableBody>
-      </Table>
+      </AdminTable>
     </div>
   );
 }

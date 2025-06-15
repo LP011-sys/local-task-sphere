@@ -1,6 +1,7 @@
 
 import React, { useState } from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { TableHeader, TableHead, TableRow, TableCell, TableBody } from "@/components/ui/table";
+import { AdminTable } from "./AdminTable";
 import { Button } from "@/components/ui/button";
 import { mockUsers } from "@/mocks/mockUsers";
 
@@ -11,14 +12,14 @@ export default function AdminUserManagement() {
     <div>
       <div className="mb-4 flex gap-2 items-end">
         <label className="font-semibold">Filter by role:</label>
-        <select value={role} onChange={e=>setRole(e.target.value as any)} className="border rounded px-2 py-1">
+        <select value={role} onChange={e=>setRole(e.target.value as any)} className="border rounded px-2 py-1 bg-background">
           <option value="all">All</option>
           <option value="customer">Customer</option>
           <option value="provider">Provider</option>
           <option value="admin">Admin</option>
         </select>
       </div>
-      <Table>
+      <AdminTable emptyMessage={!users.length ? "No users found for the selected role." : undefined}>
         <TableHeader>
           <TableRow>
             <TableHead>User</TableHead>
@@ -52,7 +53,7 @@ export default function AdminUserManagement() {
             </TableRow>
           ))}
         </TableBody>
-      </Table>
+      </AdminTable>
     </div>
   );
 }

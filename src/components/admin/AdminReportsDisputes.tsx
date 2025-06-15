@@ -1,13 +1,14 @@
 
 import React from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { TableHeader, TableHead, TableRow, TableCell, TableBody } from "@/components/ui/table";
+import { AdminTable } from "./AdminTable";
 import { Button } from "@/components/ui/button";
 import { mockReports } from "@/mocks/mockReports";
 
 export default function AdminReportsDisputes() {
   return (
     <div>
-      <Table>
+      <AdminTable emptyMessage={!mockReports.length ? "No reports or disputes." : undefined}>
         <TableHeader>
           <TableRow>
             <TableHead>Type</TableHead>
@@ -35,7 +36,7 @@ export default function AdminReportsDisputes() {
             </TableRow>
           ))}
         </TableBody>
-      </Table>
+      </AdminTable>
     </div>
   );
 }
