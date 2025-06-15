@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,6 +13,7 @@ import AdminTasksPage from "@/pages/admin/AdminTasksPage";
 import AdminReportsPage from "@/pages/admin/AdminReportsPage";
 import AdminAnalyticsPage from "@/pages/admin/AdminAnalyticsPage";
 import AdminPushPage from "@/pages/admin/AdminPushPage";
+import PremiumPackages from "./pages/PremiumPackages";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +37,7 @@ const App = () => (
             <Route path="push" element={<AdminPushPage />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/premium" element={<PremiumPackages />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
