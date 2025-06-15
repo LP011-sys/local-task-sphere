@@ -1,12 +1,20 @@
+
 import React, { useState } from "react";
 import { TableHeader, TableHead, TableRow, TableCell, TableBody } from "@/components/ui/table";
 import { AdminTable } from "./AdminTable";
 import { Button } from "@/components/ui/button";
 import { mockUsers } from "@/mocks/mockUsers";
+import { UserPlus } from "lucide-react";
 
 export default function AdminUserManagement() {
   const [role, setRole] = useState<"all"|"customer"|"provider"|"admin">("all");
   const users = role==="all" ? mockUsers : mockUsers.filter(u=>u.role===role);
+  const emptyStates: Record<string, {msg: string, icon?: React.ReactNode}> = {
+    all: { msg: "No users found. Invite your first user to get started!", icon: <UserPlus size={40} className="text-green-400" /> },
+    customer: { msg: "No customers found. As they sign up, they'll show here." },
+    provider: { msg: "No providers found. As they sign up, they'll show here." },
+    admin: { msg: "No admins found. Invite an administrator to manage the platform." },
+  };
   return (
     <div>
       <div className="mb-4 flex gap-2 items-end">
@@ -18,7 +26,10 @@ export default function AdminUserManagement() {
           <option value="admin">Admin</option>
         </select>
       </div>
-      <AdminTable emptyMessage={!users.length ? "No users found for the selected role." : undefined}>
+      <AdminTable
+        emptyMessage={!users.length ? emptyStates[role].msg : undefined}
+        emptyIcon={!users.length ? emptyStates[role].icon : undefined}
+      >
         <TableHeader>
           <TableRow>
             <TableHead>User</TableHead>
@@ -58,3 +69,4 @@ export default function AdminUserManagement() {
     </div>
   );
 }
+

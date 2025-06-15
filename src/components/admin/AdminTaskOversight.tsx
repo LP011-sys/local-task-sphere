@@ -1,12 +1,21 @@
+
 import React, { useState } from "react";
 import { TableHeader, TableHead, TableRow, TableCell, TableBody } from "@/components/ui/table";
 import { AdminTable } from "./AdminTable";
 import { Button } from "@/components/ui/button";
 import { mockTasks } from "@/mocks/mockTasks";
+import { AlertCircle } from "lucide-react";
 
 export default function AdminTaskOversight() {
   const [filter, setFilter] = useState<"all"|"active"|"flagged">("all");
-  const tasks = filter==="all"?mockTasks:mockTasks.filter(t=>filter==="flagged"?t.flagged:t.status===filter);
+  const tasks = filter === "all" ? mockTasks : mockTasks.filter(t => filter === "flagged" ? t.flagged : t.status === filter);
+
+  const emptyStates: Record<string, {msg: string, icon?: React.ReactNode}> = {
+    all: { msg: "No tasks available. Create a task to get started!", icon: <AlertCircle size={40} className="text-yellow-400" /> },
+    active: { msg: "No active tasks. All caught up!" },
+    flagged: { msg: "No flagged tasks presently. Good job!" }
+  };
+
   return (
     <div>
       <div className="mb-4 flex gap-2 items-end">
@@ -17,7 +26,10 @@ export default function AdminTaskOversight() {
           <option value="flagged">Flagged</option>
         </select>
       </div>
-      <AdminTable emptyMessage={!tasks.length ? "No tasks found for the selected filter." : undefined}>
+      <AdminTable
+        emptyMessage={!tasks.length ? emptyStates[filter].msg : undefined}
+        emptyIcon={!tasks.length ? emptyStates[filter].icon : undefined}
+      >
         <TableHeader>
           <TableRow>
             <TableHead>Title</TableHead>
@@ -51,3 +63,4 @@ export default function AdminTaskOversight() {
     </div>
   );
 }
+

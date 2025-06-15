@@ -1,13 +1,19 @@
+
 import React from "react";
 import { TableHeader, TableHead, TableRow, TableCell, TableBody } from "@/components/ui/table";
 import { AdminTable } from "./AdminTable";
 import { Button } from "@/components/ui/button";
 import { mockReports } from "@/mocks/mockReports";
+import { AlertCircle } from "lucide-react";
 
 export default function AdminReportsDisputes() {
+  const emptyMsg = "No reports or disputes yet—you're all clear!";
   return (
     <div>
-      <AdminTable emptyMessage={!mockReports.length ? "No reports or disputes." : undefined}>
+      <AdminTable
+        emptyMessage={!mockReports.length ? emptyMsg : undefined}
+        emptyIcon={!mockReports.length ? <AlertCircle size={40} className="text-blue-400" /> : undefined}
+      >
         <TableHeader>
           <TableRow>
             <TableHead>Type</TableHead>
