@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -17,7 +18,7 @@ import AdminPushPage from "@/pages/admin/AdminPushPage";
 import PremiumPackages from "./pages/PremiumPackages";
 import AuthPage from "@/pages/AuthPage";
 import AppLayout from "@/layout/AppLayout";
-import RequireAuth from "@/components/RequireAuth";
+// Removed: import RequireAuth from "@/components/RequireAuth";
 
 // Add page imports (below previous ones)
 import TaskCreationWizard from "@/pages/TaskCreationWizard";
@@ -53,11 +54,10 @@ const App = () => (
 
           {/* All other public/user routes UNDER AppLayout */}
           <Route element={<AppLayout>
-            <RequireAuth>
-              <React.Fragment />
-            </RequireAuth>
+            {/* Removed the RequireAuth wrapper so the app doesn't require authentication */}
+            <React.Fragment />
           </AppLayout>}>
-            {/* Wrapped with RequireAuth and AppLayout */}
+            {/* All routes below are now public */}
             <Route index element={<Index />} />
             <Route path="/dashboard" element={<ProviderDashboard />} />
             <Route path="/post-task" element={<TaskCreationWizard />} />
@@ -77,3 +77,4 @@ const App = () => (
 );
 
 export default App;
+
