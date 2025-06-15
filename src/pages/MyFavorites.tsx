@@ -1,4 +1,3 @@
-
 import React from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
@@ -7,19 +6,33 @@ import { Button } from "@/components/ui/button";
 import { Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+// Type for a provider
+type Provider = {
+  id: string;
+  name: string | null;
+  avatar_url?: string | null;
+};
+
+// Type for a favorite entry
 type Favorite = {
   id: string;
   provider_id: string;
   created_at: string;
-  provider: {
-    id: string;
-    name: string | null;
-    avatar_url?: string | null;
-  };
+  provider: Provider;
 };
 
 export default function MyFavoritesPage() {
-  const { profile, isLoading } = useCurrentUserProfile();
+  // Get currently logged in user's id via Supabase auth
+  const [userId, setUserId] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUserId(data?.user?.id ?? null);
+    });
+  }, []);
+
+  // Use the hook with userId
+  const { data: profile, isLoading } = useCurrentUserProfile(userId ?? undefined);
   const [favorites, setFavorites] = React.useState<Favorite[]>([]);
   const [loading, setLoading] = React.useState(true);
   const navigate = useNavigate();
@@ -27,13 +40,21 @@ export default function MyFavoritesPage() {
   React.useEffect(() => {
     if (!profile?.id) return;
     setLoading(true);
+    // Use correct provider join hint for select
     supabase
       .from("favorites")
       .select("id, provider_id, created_at, provider:provider_id(id, name, avatar_url)")
       .eq("customer_id", profile.id)
       .order("created_at", { ascending: false })
       .then(({ data }) => {
-        setFavorites(data ?? []);
+        if (Array.isArray(data)) {
+          // Only keep favorites with a valid provider
+          setFavorites(
+            data.filter((fav) => fav.provider && fav.provider.id && fav.provider.name)
+          );
+        } else {
+          setFavorites([]);
+        }
         setLoading(false);
       });
   }, [profile?.id]);
@@ -69,7 +90,7 @@ export default function MyFavoritesPage() {
 
 // Helper to fetch average rating
 async function getProviderAverageRating(providerId: string): Promise<number | null> {
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("reviews")
     .select("rating")
     .eq("reviewed_user_id", providerId);
@@ -86,11 +107,7 @@ function ProviderCard({
   provider,
   onNewTask,
 }: {
-  provider: {
-    id: string;
-    name: string | null;
-    avatar_url?: string | null;
-  };
+  provider: Provider;
   onNewTask: () => void;
 }) {
   const [avgRating, setAvgRating] = React.useState<number | null>(null);
