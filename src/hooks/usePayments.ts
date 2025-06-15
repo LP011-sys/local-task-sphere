@@ -28,7 +28,11 @@ export function useTaskPayments(taskId?: string) {
         .eq("task_id", taskId)
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return data ?? [];
+      // Ensure status is typed as PaymentStatus, not as generic string
+      return (data ?? []).map(p => ({
+        ...p,
+        status: p.status as PaymentStatus,
+      }));
     },
     enabled: !!taskId,
     refetchInterval: 3000,
@@ -72,7 +76,11 @@ export function useUpdatePaymentStatus() {
         .eq("id", id)
         .select();
       if (error) throw error;
-      return data;
+      // Ensure typed status on return if used
+      return (data ?? []).map((p: any) => ({
+        ...p,
+        status: p.status as PaymentStatus,
+      }));
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["payments"] });
