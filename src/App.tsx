@@ -5,8 +5,9 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { I18nProvider } from "@/contexts/I18nContext";
 import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+import NotFound from "@/pages/NotFound";
 import OnboardingPage from "./pages/OnboardingPage";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminUsersPage from "@/pages/admin/AdminUsersPage";
@@ -28,43 +29,45 @@ import LeaveReview from "@/pages/LeaveReview";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          {/* Authentication and onboarding routes NOT using AppLayout */}
-          <Route path="/onboarding" element={<OnboardingPage />} />
-          <Route path="/auth" element={<AuthPage />} />
+  <I18nProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            {/* Authentication and onboarding routes NOT using AppLayout */}
+            <Route path="/onboarding" element={<OnboardingPage />} />
+            <Route path="/auth" element={<AuthPage />} />
 
-          {/* Admin dashboard and nested routes */}
-          <Route path="/admin" element={<AdminDashboard />}>
-            <Route index element={<Navigate to="users" replace />} />
-            <Route path="users" element={<AdminUsersPage />} />
-            <Route path="tasks" element={<AdminTasksPage />} />
-            <Route path="reports" element={<AdminReportsPage />} />
-            <Route path="analytics" element={<AdminAnalyticsPage />} />
-            <Route path="push" element={<AdminPushPage />} />
-          </Route>
+            {/* Admin dashboard and nested routes */}
+            <Route path="/admin" element={<AdminDashboard />}>
+              <Route index element={<Navigate to="users" replace />} />
+              <Route path="users" element={<AdminUsersPage />} />
+              <Route path="tasks" element={<AdminTasksPage />} />
+              <Route path="reports" element={<AdminReportsPage />} />
+              <Route path="analytics" element={<AdminAnalyticsPage />} />
+              <Route path="push" element={<AdminPushPage />} />
+            </Route>
 
-          {/* All other public/user routes UNDER AppLayout */}
-          <Route element={<AppLayout />}>
-            <Route index element={<Index />} />
-            <Route path="/dashboard" element={<ProviderDashboard />} />
-            <Route path="/post-task" element={<TaskCreationWizard />} />
-            <Route path="/offers" element={<CustomerOffers />} />
-            <Route path="/inbox" element={<Chat />} />
-            <Route path="/favorites" element={<MyFavorites />} />
-            <Route path="/profile" element={<ProfileSettings />} />
-            <Route path="/review" element={<LeaveReview />} />
-            <Route path="/premium" element={<PremiumPackages />} />
-            <Route path="*" element={<NotFound />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+            {/* All other public/user routes UNDER AppLayout */}
+            <Route element={<AppLayout />}>
+              <Route index element={<Index />} />
+              <Route path="/dashboard" element={<ProviderDashboard />} />
+              <Route path="/post-task" element={<TaskCreationWizard />} />
+              <Route path="/offers" element={<CustomerOffers />} />
+              <Route path="/inbox" element={<Chat />} />
+              <Route path="/favorites" element={<MyFavorites />} />
+              <Route path="/profile" element={<ProfileSettings />} />
+              <Route path="/review" element={<LeaveReview />} />
+              <Route path="/premium" element={<PremiumPackages />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </I18nProvider>
 );
 
 export default App;
