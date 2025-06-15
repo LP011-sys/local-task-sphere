@@ -18,6 +18,10 @@ export default function AdminUserManagement() {
   };
   return (
     <div>
+      <h2 className="text-xl font-semibold mb-1">User Management</h2>
+      <p className="text-muted-foreground mb-4 text-sm">
+        View all registered users, filter by role, and manage user accounts, status, and access levels.
+      </p>
       <div className="mb-4 flex gap-2 items-end">
         <label className="font-semibold">Filter by role:</label>
         <select value={role} onChange={e=>setRole(e.target.value as any)} className="border rounded px-2 py-1 bg-background">

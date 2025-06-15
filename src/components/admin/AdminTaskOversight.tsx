@@ -19,6 +19,10 @@ export default function AdminTaskOversight() {
 
   return (
     <div>
+      <h2 className="text-xl font-semibold mb-1">Task Oversight</h2>
+      <p className="text-muted-foreground mb-4 text-sm">
+        See all tasks, spot flagged or active tasks, and use quick actions to monitor the task feed.
+      </p>
       <div className="mb-4 flex gap-2 items-end">
         <label className="font-semibold">Filter by:</label>
         <select value={filter} onChange={e=>setFilter(e.target.value as any)} className="border rounded px-2 py-1 bg-background">

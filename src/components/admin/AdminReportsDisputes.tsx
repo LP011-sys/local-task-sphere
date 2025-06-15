@@ -11,6 +11,10 @@ export default function AdminReportsDisputes() {
   // Show unique icon for empty state (alert for reports/disputes)
   return (
     <div>
+      <h2 className="text-xl font-semibold mb-1">Reports & Disputes</h2>
+      <p className="text-muted-foreground mb-4 text-sm">
+        Address reports and disputes in your community. Review, add notes, and resolve actions here.
+      </p>
       <AdminTable
         emptyMessage={!mockReports.length ? emptyMsg : undefined}
         emptyIcon={
