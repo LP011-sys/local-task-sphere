@@ -87,6 +87,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       geography_columns: {
@@ -596,6 +617,13 @@ export type Database = {
       gidx_out: {
         Args: { "": unknown }
         Returns: unknown
+      }
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
       }
       json: {
         Args: { "": unknown }
@@ -1888,6 +1916,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_role: "customer" | "provider" | "admin"
       user_role: "customer" | "provider" | "admin"
     }
     CompositeTypes: {
@@ -2012,6 +2041,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["customer", "provider", "admin"],
       user_role: ["customer", "provider", "admin"],
     },
   },

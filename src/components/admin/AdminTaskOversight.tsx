@@ -1,0 +1,53 @@
+
+import React, { useState } from "react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+const mockTasks = [
+  { id: "t1", title: "Paint living room", poster: "Alice", status: "active", category: "Painting", flagged: false, risk: "low" },
+  { id: "t2", title: "Fix plumbing leak", poster: "Bob", status: "flagged", category: "Plumbing", flagged: true, risk: "medium" }
+];
+export default function AdminTaskOversight() {
+  const [filter, setFilter] = useState<"all"|"active"|"flagged">("all");
+  const tasks = filter==="all"?mockTasks:mockTasks.filter(t=>filter==="flagged"?t.flagged:t.status===filter);
+  return (
+    <div>
+      <div className="mb-4 flex gap-2 items-end">
+        <label className="font-semibold">Filter by:</label>
+        <select value={filter} onChange={e=>setFilter(e.target.value as any)} className="border rounded px-2 py-1">
+          <option value="all">All</option>
+          <option value="active">Active</option>
+          <option value="flagged">Flagged</option>
+        </select>
+      </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Title</TableHead>
+            <TableHead>Poster</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Category</TableHead>
+            <TableHead>Risk</TableHead>
+            <TableHead>Action</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {tasks.map(task=>(
+            <TableRow key={task.id}>
+              <TableCell>{task.title}</TableCell>
+              <TableCell>{task.poster}</TableCell>
+              <TableCell>{task.status}</TableCell>
+              <TableCell>{task.category}</TableCell>
+              <TableCell>{task.risk}</TableCell>
+              <TableCell className="flex gap-1">
+                <Button size="sm" variant="outline">View</Button>
+                <Button size="sm" variant="destructive">Remove</Button>
+                <Button size="sm">Edit</Button>
+                <Button size="sm" variant="secondary">Flag</Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}

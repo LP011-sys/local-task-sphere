@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import OnboardingPage from "./pages/OnboardingPage";
+import AdminDashboard from "@/pages/AdminDashboard";
+import { RequireAdmin } from "@/components/auth/RequireAdmin";
 
 const queryClient = new QueryClient();
 
@@ -18,6 +20,10 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
+          {/* ADMIN dashboard (protected!) */}
+          <Route path="/admin" element={
+            <AdminDashboard />
+          } />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
