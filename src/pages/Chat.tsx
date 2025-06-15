@@ -7,11 +7,24 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { translateMessage } from "@/utils/translateMessage";
 
 // Get auth user info (simplest way)
 async function getUserId() {
   const { data } = await supabase.auth.getUser();
   return data?.user?.id ?? "";
+}
+
+// Fetches current user's language; falls back to "en" if unavailable.
+async function getCurrentUserLanguage(userId: string): Promise<string> {
+  if (!userId) return "en";
+  const { data, error } = await supabase
+    .from("app_users")
+    .select("language")
+    .eq("id", userId)
+    .single();
+  if (error || !data?.language) return "en";
+  return data.language;
 }
 
 export default function Chat() {
@@ -22,6 +35,11 @@ export default function Chat() {
   const { data: messages, isLoading, isError } = useChatMessages(taskId);
   const sendMessage = useSendMessage();
   const [userId, setUserId] = useState<string>("");
+  const [userLang, setUserLang] = useState<string>("en");
+  const [showTranslations, setShowTranslations] = useState<boolean>(false);
+  const [translations, setTranslations] = useState<Record<string, string>>({});
+  const [loadingTranslations, setLoadingTranslations] = useState<Set<string>>(new Set());
+
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   // Determine other participant (show name as "You" for own messages)
@@ -38,10 +56,48 @@ export default function Chat() {
     }
   }, [messages]);
 
-  // Get current user id
+  // Get current user id and language
   useEffect(() => {
-    getUserId().then(setUserId);
+    getUserId().then(uid => {
+      setUserId(uid);
+      if (uid) {
+        getCurrentUserLanguage(uid).then(setUserLang);
+      }
+    });
   }, []);
+
+  // When toggle changes or messages change, translate necessary messages
+  useEffect(() => {
+    if (!showTranslations || !messages || !userId || !userLang) {
+      setTranslations({});
+      return;
+    }
+
+    // In a real app, sender language should be detected or fetched. Here, default others to "en", yours to userLang.
+    messages.forEach((msg) => {
+      // Don't translate own messages
+      if (msg.sender_id === userId) return;
+      // For demo: pretend sender's language is "en", only translate if userLang !== "en"
+      const senderLanguage = "en";
+      if (userLang !== senderLanguage) {
+        // Only translate if not already translated
+        if (!translations[msg.id] && !loadingTranslations.has(msg.id)) {
+          setLoadingTranslations(prev => new Set([...prev, msg.id]));
+          translateMessage(msg.content, userLang)
+            .then(translated => {
+              setTranslations(prev => ({ ...prev, [msg.id]: translated }));
+            })
+            .finally(() => {
+              setLoadingTranslations(prev => {
+                const next = new Set(prev);
+                next.delete(msg.id);
+                return next;
+              });
+            });
+        }
+      }
+    });
+  }, [showTranslations, messages, userLang, userId, translations, loadingTranslations]);
 
   // Submit a new message
   async function handleSend(e?: React.FormEvent) {
@@ -82,7 +138,18 @@ export default function Chat() {
         <Button variant="ghost" onClick={() => navigate(-1)}>
           ← Back to Task
         </Button>
-        <h2 className="font-bold text-lg">Task Chat</h2>
+        <h2 className="font-bold text-lg flex-1">Task Chat</h2>
+        <div>
+          <label className="inline-flex items-center gap-2 cursor-pointer text-sm select-none">
+            <input
+              type="checkbox"
+              checked={showTranslations}
+              onChange={e => setShowTranslations(e.target.checked)}
+              className="accent-primary"
+            />
+            Show translations
+          </label>
+        </div>
       </div>
       {/* Message area */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 pt-6 pb-24">
@@ -92,15 +159,30 @@ export default function Chat() {
           <div className="text-center text-muted-foreground">No messages yet.</div>
         )}
         {messages &&
-          messages.map((msg) => (
-            <ChatMessageBubble
-              key={msg.id}
-              content={msg.content}
-              isOwn={msg.sender_id === userId}
-              senderName={msg.sender_id === userId ? undefined : "Provider"}
-              createdAt={msg.created_at}
-            />
-          ))}
+          messages.map((msg) => {
+            const isOwn = msg.sender_id === userId;
+            const hasTranslation =
+              !isOwn &&
+              showTranslations &&
+              translations[msg.id] !== undefined &&
+              translations[msg.id] !== msg.content &&
+              userLang !== "en";
+            return (
+              <div key={msg.id}>
+                <ChatMessageBubble
+                  content={msg.content}
+                  isOwn={isOwn}
+                  senderName={isOwn ? undefined : "Provider"}
+                  createdAt={msg.created_at}
+                />
+                {hasTranslation && (
+                  <div className="ml-6 mt-0.5 text-sm italic text-gray-500">
+                    {translations[msg.id]}
+                  </div>
+                )}
+              </div>
+            );
+          })}
       </div>
       {/* Input area */}
       <form
