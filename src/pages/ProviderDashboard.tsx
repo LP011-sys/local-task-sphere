@@ -46,8 +46,6 @@ const MOCK_OFFERS = [
 ];
 
 // ALL STATUSES BELOW NOW MATCH BACKEND/DB FORMAT
-type TaskStatus = "open" | "in_progress" | "done" | "completed" | "cancelled";
-
 const MOCK_ACCEPTED_TASKS: {
   id: string;
   title: string;
