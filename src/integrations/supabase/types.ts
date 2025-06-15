@@ -157,6 +157,64 @@ export type Database = {
           },
         ]
       }
+      payments: {
+        Row: {
+          amount_platform_fee: number
+          amount_provider: number
+          amount_total: number
+          created_at: string
+          customer_id: string
+          id: string
+          provider_id: string
+          status: string
+          task_id: string
+        }
+        Insert: {
+          amount_platform_fee: number
+          amount_provider: number
+          amount_total: number
+          created_at?: string
+          customer_id: string
+          id?: string
+          provider_id: string
+          status: string
+          task_id: string
+        }
+        Update: {
+          amount_platform_fee?: number
+          amount_provider?: number
+          amount_total?: number
+          created_at?: string
+          customer_id?: string
+          id?: string
+          provider_id?: string
+          status?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "Tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spatial_ref_sys: {
         Row: {
           auth_name: string | null

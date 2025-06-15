@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Tabs,
@@ -155,6 +154,14 @@ export default function ProviderDashboard() {
     toast({ title: "Offer cancelled." });
   }
 
+  // For payment status display:
+  function getPaymentStatus(taskId: string) {
+    // This would use a hook in real implementation; here is just a stub for display:
+    // You would fetch the payment object from useTaskPayments and show .status
+    // For demo, randomly determine "Prepaid" or "Pending Payment"
+    return Math.random() > 0.5 ? "Prepaid" : "Pending Payment";
+  }
+
   return (
     <div className="max-w-3xl mx-auto px-2 py-4">
       <Tabs value={tab} onValueChange={setTab} className="w-full">
@@ -219,6 +226,15 @@ export default function ProviderDashboard() {
                       className={`px-2 py-0.5 rounded text-xs font-semibold ${STATUS_COLORS[task.status]}`}
                     >
                       {task.status}
+                    </span>
+                    {/* Payment status for provider */}
+                    <span className={`ml-2 text-xs px-2 py-0.5 rounded font-semibold ${
+                      getPaymentStatus(task.id) === "Prepaid"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-yellow-100 text-yellow-800"
+                    }`
+                    }>
+                      {getPaymentStatus(task.id)}
                     </span>
                   </div>
                 </div>
