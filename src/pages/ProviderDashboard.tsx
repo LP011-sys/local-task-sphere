@@ -39,18 +39,26 @@ const MOCK_OFFERS = [
   },
 ];
 
-const MOCK_ACCEPTED_TASKS = [
+// ALL STATUSES BELOW NOW MATCH BACKEND/DB FORMAT
+type TaskStatus = "open" | "in_progress" | "done" | "completed" | "cancelled";
+
+const MOCK_ACCEPTED_TASKS: {
+  id: string;
+  title: string;
+  deadline: string;
+  status: TaskStatus;
+}[] = [
   {
     id: "t1",
     title: "Mount curtain rod",
     deadline: new Date(Date.now() + 1000 * 60 * 60 * 12).toISOString(),
-    status: "Not Started" as "Not Started" | "In Progress" | "Completed",
+    status: "open",
   },
   {
     id: "t2",
     title: "Build bookshelf",
     deadline: new Date(Date.now() + 1000 * 60 * 60 * 36).toISOString(),
-    status: "In Progress" as "Not Started" | "In Progress" | "Completed",
+    status: "in_progress",
   },
 ];
 
@@ -105,23 +113,24 @@ const STATUS_COLORS: Record<string, string> = {
   "Pending": "bg-blue-100 text-blue-800",
   "Declined": "bg-red-100 text-red-800",
   "Expired": "bg-gray-100 text-gray-700",
-  "Not Started": "bg-yellow-100 text-yellow-800",
-  "In Progress": "bg-blue-100 text-blue-800",
-  "Completed": "bg-green-100 text-green-800",
+  "open": "bg-yellow-100 text-yellow-800",
+  "in_progress": "bg-blue-100 text-blue-800",
+  "done": "bg-blue-200 text-blue-900",
+  "completed": "bg-green-100 text-green-800",
+  "cancelled": "bg-red-100 text-red-800",
 };
-
-// ----------------------------
 
 export default function ProviderDashboard() {
   const [tab, setTab] = useState("offers");
   const [offers, setOffers] = useState(MOCK_OFFERS);
+  // accepted status now matches backend
   const [accepted, setAccepted] = useState(MOCK_ACCEPTED_TASKS);
   const [completed, setCompleted] = useState(MOCK_COMPLETED_TASKS);
 
   const taskStatusMutation = useTaskStatusMutation();
 
-  // For Accepted Tasks: now trigger mutation for status
-  async function updateTaskStatus(id: string, next: "in_progress" | "done" | "completed") {
+  // For Accepted Tasks: trigger mutation for status
+  async function updateTaskStatus(id: string, next: TaskStatus) {
     try {
       await taskStatusMutation.mutateAsync({ taskId: id, status: next });
       setAccepted(acc =>
@@ -175,7 +184,7 @@ export default function ProviderDashboard() {
     return Math.random() > 0.5 ? "Prepaid" : "Pending Payment";
   }
 
-  function statusBadge(status: string) {
+  function statusBadge(status: TaskStatus) {
     switch (status) {
       case "open":
         return <Badge className="bg-gray-100 text-gray-900">Open</Badge>;
@@ -264,7 +273,7 @@ export default function ProviderDashboard() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  {task.status === "Not Started" && (
+                  {task.status === "open" && (
                     <Button
                       size="sm"
                       onClick={() => updateTaskStatus(task.id, "in_progress")}
