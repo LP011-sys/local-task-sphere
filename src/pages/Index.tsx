@@ -3,8 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Loader2, LogIn } from "lucide-react";
 import { I18nProvider } from "@/contexts/I18nContext";
-import { Table, TableHeader, TableRow, TableHead, TableCell, TableBody } from "@/components/ui/table";
-import { useQuery } from "@tanstack/react-query";
+import CustomerTasksTable from "./components/CustomerTasksTable";
+import CustomerOffersTable from "./components/CustomerOffersTable";
+import CustomerFavoritesTable from "./components/CustomerFavoritesTable";
+import IndexHero from "./IndexHero";
+import { useTasks } from "@/hooks/useTasks";
+import { useOffers } from "@/hooks/useOffers";
+import { useFavorites } from "@/hooks/useFavorites";
 
 function useAuthState() {
   const [authed, setAuthed] = useState(false);
@@ -27,14 +32,8 @@ function useAuthState() {
   return { authed, user };
 }
 
-import CustomerTasksTable from "./components/CustomerTasksTable";
-import CustomerOffersTable from "./components/CustomerOffersTable";
-import CustomerFavoritesTable from "./components/CustomerFavoritesTable";
-
 export default function Index() {
   const { authed } = useAuthState();
-  // Replace all <CustomerTasksTable />, <CustomerOffersTable />, <CustomerFavoritesTable /> inline code with the imported components.
-  // This reduces the file size and isolates table rendering logic.
 
   return (
     <I18nProvider>
@@ -93,26 +92,7 @@ export default function Index() {
           )}
         </header>
         {/* Hero section always visible */}
-        <section className="flex flex-col md:flex-row items-center justify-between gap-10 p-8 max-w-7xl w-full mx-auto">
-          <div className="flex flex-col gap-4 max-w-xl md:text-left text-center items-start md:items-start">
-            <h1 className="text-5xl font-extrabold text-primary drop-shadow mb-3">Find the right person for your task, fast.</h1>
-            <p className="text-lg text-muted-foreground mb-3">
-              Welcome to <span className="font-semibold text-accent-foreground">Task Hub</span>, your place to post tasks or offer services.<br />
-              Instantly find help, make offers, and collaborate in your local area.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 mt-3">
-              <a href="/post-task"><Button size="lg" className="text-base">Post a Task</Button></a>
-              <a href="#tasks"><Button variant="outline" size="lg" className="text-base">Browse Tasks</Button></a>
-              {authed && (<a href="/dashboard"><Button variant="secondary" size="lg" className="text-base">View My Dashboard</Button></a>)}
-            </div>
-          </div>
-          <img
-            src="/placeholder.svg"
-            alt="Task hub art"
-            className="w-80 h-48 object-contain drop-shadow-xl mt-6 md:mt-0"
-            draggable={false}
-          />
-        </section>
+        <IndexHero authed={authed} />
         {/* Main content */}
         <main className="flex-grow w-full max-w-7xl mx-auto px-4 py-5 space-y-16">
           {/* Task Table */}
@@ -146,35 +126,6 @@ export default function Index() {
       </div>
     </I18nProvider>
   );
-}
-
-// Export useTasks, useOffers, useFavorites so table components can import them
-export function useTasks() {
-  return useQuery({
-    queryKey: ["Tasks"],
-    queryFn: async () => {
-      const { data } = await supabase.from("Tasks").select("*").order("created_at", { ascending: false });
-      return data ?? [];
-    },
-  });
-}
-export function useOffers() {
-  return useQuery({
-    queryKey: ["offers-customer"],
-    queryFn: async () => {
-      const { data } = await supabase.from("offers").select("*").order("created_at", { ascending: false });
-      return data ?? [];
-    },
-  });
-}
-export function useFavorites() {
-  return useQuery({
-    queryKey: ["favorites"],
-    queryFn: async () => {
-      const { data } = await supabase.from("favorites").select("*").order("created_at", { ascending: false });
-      return data ?? [];
-    },
-  });
 }
 
 type Role = "customer" | "provider" | "admin";
