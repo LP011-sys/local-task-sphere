@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { TableHeader, TableHead, TableRow, TableCell, TableBody } from "@/components/ui/table";
 import { AdminTable } from "./AdminTable";
@@ -44,11 +43,13 @@ export default function AdminUserManagement() {
               <TableCell>{user.status}</TableCell>
               <TableCell>{user.tasks}</TableCell>
               <TableCell>{user.rating !== null ? user.rating : "-"}</TableCell>
-              <TableCell className="flex gap-1">
-                <Button size="sm" variant="outline">View</Button>
-                <Button size="sm" variant="destructive">Suspend</Button>
-                <Button size="sm" variant="secondary">Ban</Button>
-                <Button size="sm">Verify</Button>
+              <TableCell>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline">View</Button>
+                  <Button size="sm" variant="destructive">Suspend</Button>
+                  <Button size="sm" variant="secondary">Ban</Button>
+                  <Button size="sm" variant="default">Verify</Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}

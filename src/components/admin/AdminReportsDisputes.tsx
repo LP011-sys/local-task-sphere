@@ -1,4 +1,3 @@
-
 import React from "react";
 import { TableHeader, TableHead, TableRow, TableCell, TableBody } from "@/components/ui/table";
 import { AdminTable } from "./AdminTable";
@@ -30,8 +29,10 @@ export default function AdminReportsDisputes() {
                 <input className="border rounded px-2 py-1 w-36" placeholder="Add note" />
               </TableCell>
               <TableCell>
-                <Button size="sm" variant="outline">View</Button>
-                <Button size="sm" variant="secondary">Resolve</Button>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline">View</Button>
+                  <Button size="sm" variant="secondary">Resolve</Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}
@@ -40,3 +41,4 @@ export default function AdminReportsDisputes() {
     </div>
   );
 }
+

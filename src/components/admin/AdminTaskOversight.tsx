@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { TableHeader, TableHead, TableRow, TableCell, TableBody } from "@/components/ui/table";
 import { AdminTable } from "./AdminTable";
@@ -37,11 +36,13 @@ export default function AdminTaskOversight() {
               <TableCell>{task.status}</TableCell>
               <TableCell>{task.category}</TableCell>
               <TableCell>{task.risk}</TableCell>
-              <TableCell className="flex gap-1">
-                <Button size="sm" variant="outline">View</Button>
-                <Button size="sm" variant="destructive">Remove</Button>
-                <Button size="sm">Edit</Button>
-                <Button size="sm" variant="secondary">Flag</Button>
+              <TableCell>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline">View</Button>
+                  <Button size="sm" variant="destructive">Remove</Button>
+                  <Button size="sm" variant="default">Edit</Button>
+                  <Button size="sm" variant="secondary">Flag</Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}
