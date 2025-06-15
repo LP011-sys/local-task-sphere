@@ -41,7 +41,7 @@ export default function AuthPage() {
           return;
         }
         toast({ title: "Logged in!", description: "Welcome back 😊" });
-        navigate("/ProfileSettings");
+        navigate("/"); // Redirect to home instead of /ProfileSettings
         return;
       } else {
         const { error } = await supabase.auth.signUp({
