@@ -12,12 +12,15 @@ export type Database = {
       app_users: {
         Row: {
           auth_user_id: string
+          bio: string | null
           completed_tasks: number | null
           created_at: string | null
           email: string
           id: string
+          language: string | null
           location: unknown | null
           name: string
+          notification_preferences: Json | null
           phone: string | null
           preferred_language: string
           profile_photo: string | null
@@ -29,12 +32,15 @@ export type Database = {
         }
         Insert: {
           auth_user_id: string
+          bio?: string | null
           completed_tasks?: number | null
           created_at?: string | null
           email: string
           id?: string
+          language?: string | null
           location?: unknown | null
           name: string
+          notification_preferences?: Json | null
           phone?: string | null
           preferred_language?: string
           profile_photo?: string | null
@@ -46,12 +52,15 @@ export type Database = {
         }
         Update: {
           auth_user_id?: string
+          bio?: string | null
           completed_tasks?: number | null
           created_at?: string | null
           email?: string
           id?: string
+          language?: string | null
           location?: unknown | null
           name?: string
+          notification_preferences?: Json | null
           phone?: string | null
           preferred_language?: string
           profile_photo?: string | null
