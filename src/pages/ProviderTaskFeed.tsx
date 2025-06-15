@@ -52,7 +52,7 @@ export default function ProviderTaskFeed() {
   const [search, setSearch] = useState<string>("");
 
   // React Query: fetch open tasks from Supabase
-  const { data: tasks, isLoading, refetch, error } = useQuery({
+  const { data: tasks, isLoading, refetch, error } = useQuery<any[], Error>({
     queryKey: [
       "providerFeedTasks",
       category,
@@ -60,7 +60,7 @@ export default function ProviderTaskFeed() {
       budgetMax,
       search,
     ],
-    queryFn: async () => {
+    queryFn: async (): Promise<any[]> => {
       let query = supabase
         .from("Tasks")
         .select("*")
@@ -80,14 +80,17 @@ export default function ProviderTaskFeed() {
       const { data, error } = await query;
       if (error) throw error;
 
+      // Defensive: treat as any[] immediately to avoid deep instantiation
+      const result = data as any[];
+
       // Order by boost_status: 24h > 8h > none
-      (data as any[]).sort(
+      result.sort(
         (a, b) =>
           (BOOST_ORDER[a.boost_status as keyof typeof BOOST_ORDER] ?? 2) -
           (BOOST_ORDER[b.boost_status as keyof typeof BOOST_ORDER] ?? 2)
       );
 
-      return data as any[];
+      return result;
     },
     staleTime: 120_000,
   });
