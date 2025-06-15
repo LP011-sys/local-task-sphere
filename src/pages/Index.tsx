@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import RoleSelector, { roles } from "@/components/RoleSelector";
 import NavBar from "@/components/NavBar";
@@ -10,6 +9,12 @@ const defaultTab: Record<Role, string> = {
   provider: "task-feed",
   admin: "user-manager"
 };
+
+// Utility table component for basic array display
+import { Table, TableHeader, TableRow, TableHead, TableCell, TableBody, TableCaption } from "@/components/ui/table";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
 
 // Wrapper per-role tabs and current page
 function RoleHome({ initialRole = "customer" }: { initialRole?: Role }) {
@@ -96,8 +101,10 @@ export default function Index() {
   );
 }
 
-// ----------- CUSTOMER PAGE STUBS -----------
-function CustomerDashboard() { const { t } = useI18n(); return <Section title={t("dashboard")} description="Your summary and new tasks." />; }
+// ----------- CUSTOMER PAGE STUBS (with DATA) -----------
+function CustomerDashboard() { 
+  return <CustomerDataExplorer />;
+}
 function CustomerPostTask() {
   const { t } = useI18n();
   // Link to the real wizard page
@@ -118,28 +125,249 @@ function CustomerPostTask() {
     />
   );
 }
-function CustomerMyTasks() { const { t } = useI18n(); return <Section title={t("myTasks")} description="All tasks you've posted." />; }
-function CustomerOffers() { const { t } = useI18n(); return <Section title={t("offers")} description="Review offers from providers." />; }
+function CustomerMyTasks() { 
+  return <CustomerTasksTable />;
+}
+function CustomerOffers() { 
+  return <CustomerOffersTable />;
+}
 function CustomerMessages() { const { t } = useI18n(); return <Section title={t("messages")} description="Direct messages and negotiations." />; }
 function CustomerProfile() { const { t } = useI18n(); return <Section title={t("profile")} description="View and edit your customer profile." />; }
 function CustomerSettings() { const { t } = useI18n(); return <Section title={t("settings")} description="Configure your account." />; }
 
-// ----------- PROVIDER PAGE STUBS -----------
-function ProviderTaskFeed() { const { t } = useI18n(); return <Section title={t("taskFeed")} description="Feed of open tasks in your area." />; }
-function ProviderMyOffers() { const { t } = useI18n(); return <Section title={t("myOffers")} description="Your offers for tasks." />; }
+// ----------- PROVIDER PAGE STUBS (with DATA) -----------
+function ProviderTaskFeed() { 
+  return <ProviderTasksTable />;
+}
+function ProviderMyOffers() { 
+  return <ProviderOffersTable />;
+}
 function ProviderAcceptedTasks() { const { t } = useI18n(); return <Section title={t("acceptedTasks")} description="Tasks you've accepted to complete." />; }
 function ProviderMessages() { const { t } = useI18n(); return <Section title={t("messages")} description="Direct messages and negotiations." />; }
-function ProviderEarnings() { const { t } = useI18n(); return <Section title={t("earnings")} description="Earnings and payment history." />; }
+function ProviderEarnings() { 
+  return <ProviderPaymentsTable />;
+}
 function ProviderProfile() { const { t } = useI18n(); return <Section title={t("profile")} description="Manage your provider profile." />; }
 function ProviderSettings() { const { t } = useI18n(); return <Section title={t("settings")} description="Configure your account." />; }
 
-// ----------- ADMIN PAGE STUBS -----------
-function AdminUserManager() { const { t } = useI18n(); return <Section title={t("userManager")} description="Manage users, roles, and permissions." />; }
-function AdminTaskOversight() { const { t } = useI18n(); return <Section title={t("taskOversight")} description="Oversee and monitor all tasks on the platform." />; }
-function AdminDisputes() { const { t } = useI18n(); return <Section title={t("disputes")} description="Handle disputes between customers and providers." />; }
-function AdminReports() { const { t } = useI18n(); return <Section title={t("reports")} description="Review reports and analytics." />; }
-function AdminBroadcasts() { const { t } = useI18n(); return <Section title={t("broadcasts")} description="Broadcast urgent notices or updates." />; }
-function AdminCategoryManager() { const { t } = useI18n(); return <Section title={t("categoryManager")} description="Manage service categories." />; }
+// ----------- Data Explorer TABLE COMPONENTS --------------------
+
+// CUSTOMER tables
+function CustomerDataExplorer() {
+  return (
+    <div>
+      <h2 className="text-2xl font-bold mb-3">Customer Demo Data</h2>
+      <div className="space-y-8">
+        <CustomerTasksTable />
+        <CustomerOffersTable />
+        <CustomerFavoritesTable />
+        <CustomerPaymentsTable />
+        <CustomerReviewsTable />
+      </div>
+    </div>
+  );
+}
+function CustomerTasksTable() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["Tasks"],
+    queryFn: async () => {
+      const { data } = await supabase.from("Tasks").select("*").order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+  return (
+    <div>
+      <h3 className="font-bold text-lg mb-1">Tasks</h3>
+      {isLoading ? <Loader2 className="animate-spin" /> : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Title</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Price</TableHead>
+              <TableHead>Deadline</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map((t:any) => (
+              <TableRow key={t.id}>
+                <TableCell>{t.offer || t.description}</TableCell>
+                <TableCell>{t.status}</TableCell>
+                <TableCell>{t.category}</TableCell>
+                <TableCell>€{t.price}</TableCell>
+                <TableCell>{t.deadline ? new Date(t.deadline).toLocaleString() : "-"}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </div>
+  );
+}
+function CustomerOffersTable() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["offers-customer"],
+    queryFn: async () => {
+      const { data } = await supabase.from("offers").select("*").order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+  return (
+    <div>
+      <h3 className="font-bold text-lg mb-1">Offers</h3>
+      {isLoading ? <Loader2 className="animate-spin" /> : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Task ID</TableHead>
+              <TableHead>Provider ID</TableHead>
+              <TableHead>Message</TableHead>
+              <TableHead>Price</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Created At</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map((o: any) => (
+              <TableRow key={o.id}>
+                <TableCell>{o.task_id}</TableCell>
+                <TableCell>{o.provider_id}</TableCell>
+                <TableCell>{o.message}</TableCell>
+                <TableCell>{o.price}</TableCell>
+                <TableCell>{o.status}</TableCell>
+                <TableCell>{o.created_at ? new Date(o.created_at).toLocaleString() : "-"}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </div>
+  );
+}
+function CustomerFavoritesTable() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["favorites"],
+    queryFn: async () => {
+      const { data } = await supabase.from("favorites").select("*").order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+  return (
+    <div>
+      <h3 className="font-bold text-lg mb-1">Favorites</h3>
+      {isLoading ? <Loader2 className="animate-spin" /> : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Customer ID</TableHead>
+              <TableHead>Provider ID</TableHead>
+              <TableHead>Created At</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map((f: any) => (
+              <TableRow key={f.id}>
+                <TableCell>{f.customer_id}</TableCell>
+                <TableCell>{f.provider_id}</TableCell>
+                <TableCell>{f.created_at ? new Date(f.created_at).toLocaleString() : "-"}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </div>
+  );
+}
+function CustomerPaymentsTable() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["payments"],
+    queryFn: async () => {
+      const { data } = await supabase.from("payments").select("*").order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+  return (
+    <div>
+      <h3 className="font-bold text-lg mb-1">Payments</h3>
+      {isLoading ? <Loader2 className="animate-spin" /> : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Task ID</TableHead>
+              <TableHead>Customer</TableHead>
+              <TableHead>Provider</TableHead>
+              <TableHead>Total</TableHead>
+              <TableHead>Platform Fee</TableHead>
+              <TableHead>Provider Amount</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Created At</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map((p:any) => (
+              <TableRow key={p.id}>
+                <TableCell>{p.task_id}</TableCell>
+                <TableCell>{p.customer_id}</TableCell>
+                <TableCell>{p.provider_id}</TableCell>
+                <TableCell>€{p.amount_total}</TableCell>
+                <TableCell>€{p.amount_platform_fee}</TableCell>
+                <TableCell>€{p.amount_provider}</TableCell>
+                <TableCell>{p.status}</TableCell>
+                <TableCell>{p.created_at ? new Date(p.created_at).toLocaleString() : "-"}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </div>
+  );
+}
+function CustomerReviewsTable() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["reviews"],
+    queryFn: async () => {
+      const { data } = await supabase.from("reviews").select("*").order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+  return (
+    <div>
+      <h3 className="font-bold text-lg mb-1">Reviews</h3>
+      {isLoading ? <Loader2 className="animate-spin" /> : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Task ID</TableHead>
+              <TableHead>Reviewer ID</TableHead>
+              <TableHead>Reviewed User</TableHead>
+              <TableHead>Rating</TableHead>
+              <TableHead>Comment</TableHead>
+              <TableHead>Created At</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map((r:any) => (
+              <TableRow key={r.id}>
+                <TableCell>{r.task_id}</TableCell>
+                <TableCell>{r.reviewer_id}</TableCell>
+                <TableCell>{r.reviewed_user_id}</TableCell>
+                <TableCell>{r.rating}</TableCell>
+                <TableCell>{r.comment}</TableCell>
+                <TableCell>{r.created_at ? new Date(r.created_at).toLocaleString() : "-"}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </div>
+  );
+}
+
+// PROVIDER tables (reuse task/offers/payments/reviews but could add their own filters)
+function ProviderTasksTable() { return <CustomerTasksTable />; }
+function ProviderOffersTable() { return <CustomerOffersTable />; }
+function ProviderPaymentsTable() { return <CustomerPaymentsTable />; }
 
 // ----------- GENERIC PAGE SECTION -----------
 // Change description?: string to description?: React.ReactNode
