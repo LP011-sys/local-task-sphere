@@ -27,6 +27,20 @@ const steps = [
   { name: "Review", key: "review" }
 ];
 
+// Utility to get current user's app_users row
+async function getCurrentUserId() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  // Lookup the app_users row
+  const { data, error } = await supabase
+    .from("app_users")
+    .select("id")
+    .eq("auth_user_id", user.id)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data.id;
+}
+
 export default function TaskWizard({ onDone }: { onDone?: () => void }) {
   const [currentStep, setCurrentStep] = useState(0);
 
@@ -106,22 +120,35 @@ export default function TaskWizard({ onDone }: { onDone?: () => void }) {
   // Submission logic
   async function handlePost() {
     setPosting(true);
-    // TODO: Validation
     try {
-      // Prepare data (Supabase table: 'Tasks', boost status in 'boostStatus')
-      const { category, description, images, location, type, price, offer, deadline, acceptanceDeadline, recurring, boost } = form;
-      const { error } = await supabase.from("Tasks").insert([{
+      // 1. Get app_users id for current user
+      const user_id = await getCurrentUserId();
+      if (!user_id) throw new Error("Unable to identify user.");
+
+      // 2. Prepare insert payload for Tasks table
+      const {
+        category, description, images, location, type,
+        price, offer, deadline, acceptanceDeadline, recurring, boost, suggestedPrice
+      } = form;
+
+      const insertPayload = {
+        user_id,
         category,
         description,
-        images,
-        location,
+        images: images && images.length > 0 ? images : null,
+        location: location ?? null,
         type,
-        price: type === "fixed" ? price : offer,
+        price: (type === "fixed") ? price : null,
+        offer: (type !== "fixed") ? offer : null,
         deadline,
         acceptance_deadline: acceptanceDeadline,
         recurring,
-        boostStatus: boost
-      }]);
+        boost_status: boost,
+        suggested_price: suggestedPrice,
+      };
+
+      // 3. Insert task
+      const { error } = await supabase.from("Tasks").insert([insertPayload]);
       if (error) throw error;
       toast({ title: "Task posted!", description: "Your task is now live." });
       if (onDone) onDone();
@@ -167,3 +194,4 @@ function ProgressStepper({ current, steps }: { current: number, steps: any[] }) 
     </div>
   );
 }
+

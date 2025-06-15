@@ -87,6 +87,68 @@ export type Database = {
         }
         Relationships: []
       }
+      Tasks: {
+        Row: {
+          acceptance_deadline: string | null
+          boost_status: string | null
+          category: string
+          created_at: string | null
+          deadline: string | null
+          description: string
+          id: string
+          images: Json | null
+          location: Json | null
+          offer: string | null
+          price: string | null
+          recurring: boolean | null
+          suggested_price: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          acceptance_deadline?: string | null
+          boost_status?: string | null
+          category: string
+          created_at?: string | null
+          deadline?: string | null
+          description: string
+          id?: string
+          images?: Json | null
+          location?: Json | null
+          offer?: string | null
+          price?: string | null
+          recurring?: boolean | null
+          suggested_price?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          acceptance_deadline?: string | null
+          boost_status?: string | null
+          category?: string
+          created_at?: string | null
+          deadline?: string | null
+          description?: string
+          id?: string
+          images?: Json | null
+          location?: Json | null
+          offer?: string | null
+          price?: string | null
+          recurring?: boolean | null
+          suggested_price?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Tasks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
