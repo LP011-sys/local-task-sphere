@@ -129,8 +129,11 @@ export default function ProviderDashboard() {
 
   const taskStatusMutation = useTaskStatusMutation();
 
-  // For Accepted Tasks: trigger mutation for status
-  async function updateTaskStatus(id: string, next: TaskStatus) {
+  // Fix: Restrict input to mutation function to only accepted values
+  async function updateTaskStatus(
+    id: string,
+    next: "in_progress" | "done" | "completed" | "cancelled"
+  ) {
     try {
       await taskStatusMutation.mutateAsync({ taskId: id, status: next });
       setAccepted(acc =>
