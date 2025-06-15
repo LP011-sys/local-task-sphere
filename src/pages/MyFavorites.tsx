@@ -1,3 +1,4 @@
+
 import React from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
@@ -10,7 +11,6 @@ import { useNavigate } from "react-router-dom";
 type Provider = {
   id: string;
   name: string | null;
-  avatar_url?: string | null;
 };
 
 // Type for a favorite entry
@@ -40,7 +40,6 @@ export default function MyFavoritesPage() {
   React.useEffect(() => {
     if (!profile?.id) return;
     setLoading(true);
-    // Remove non-existent avatar_url column from join hint!
     supabase
       .from("favorites")
       .select("id, provider_id, created_at, provider:app_users!favorites_provider_id_fkey(id,name)")
@@ -49,7 +48,6 @@ export default function MyFavoritesPage() {
       .then(({ data }) => {
         if (Array.isArray(data)) {
           setFavorites(
-            // Only keep when provider exists with required fields
             data.filter((fav) => fav.provider && fav.provider.id && fav.provider.name)
           );
         } else {
@@ -60,23 +58,29 @@ export default function MyFavoritesPage() {
   }, [profile?.id]);
 
   if (isLoading || loading) {
-    return <div className="text-center py-12">Loading...</div>;
+    return (
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 flex justify-center items-center h-80">
+        <div className="text-center text-muted-foreground text-lg">Loading...</div>
+      </div>
+    );
   }
 
   if (!favorites.length) {
     return (
-      <div className="max-w-xl mx-auto pt-12 text-center">
-        <h2 className="text-2xl font-bold mb-3">No Saved Providers</h2>
-        <p className="text-muted-foreground max-w-sm mx-auto">
-          When you save a provider as a favorite, they’ll appear here so you can message or quickly rehire them.
-        </p>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+        <div className="bg-white rounded-xl shadow-md p-6 border flex flex-col gap-4 items-center">
+          <h2 className="text-xl font-bold mb-1">No Saved Providers</h2>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            When you save a provider as a favorite, they’ll appear here so you can message or quickly rehire them.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-2 py-8">
-      <h1 className="text-3xl font-bold mb-6">My Favorite Providers</h1>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+      <h1 className="text-xl font-bold mb-4">My Favorite Providers</h1>
       <div className="flex flex-col gap-6">
         {favorites.map(fav => (
           <ProviderCard
@@ -121,29 +125,30 @@ function ProviderCard({
   }, [provider.id]);
 
   return (
-    <Card className="flex items-center gap-4 p-5">
+    <div className="bg-white rounded-xl shadow-md p-6 border flex items-center gap-4 w-full">
       <div className="flex-shrink-0">
-        {/* No avatar_url from backend, always use fallback */}
-        <div className="w-14 h-14 rounded-full bg-gray-200 flex items-center justify-center text-2xl">
+        {/* Fallback avatar with initial */}
+        <div className="w-14 h-14 rounded-full bg-gray-200 flex items-center justify-center text-2xl text-primary font-bold border">
           {provider.name?.[0]?.toUpperCase() || "P"}
         </div>
       </div>
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 space-y-1">
         <div className="font-bold text-lg truncate">{provider.name || "(No Name)"}</div>
-        <div className="flex items-center gap-1 text-sm text-yellow-600 mt-1">
+        <div className="flex items-center gap-1 text-yellow-600 mt-1">
           <Star className="h-4 w-4 text-yellow-400 fill-yellow-300" />
-          <span>{avgRating !== null ? avgRating : "-"}</span>
-          <span className="ml-1 text-xs text-gray-400">(avg rating)</span>
+          <span className="font-medium">{avgRating !== null ? avgRating : "-"}</span>
+          <span className="ml-1 text-xs text-muted-foreground">(avg rating)</span>
         </div>
       </div>
       <Button
-        variant="secondary"
-        className="shrink-0"
+        variant="default"
+        className="shrink-0 min-w-[120px] ml-auto"
         onClick={onNewTask}
         type="button"
       >
         Post New Task
       </Button>
-    </Card>
+    </div>
   );
 }
+
