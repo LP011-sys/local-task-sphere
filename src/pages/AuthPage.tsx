@@ -68,6 +68,15 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-blue-50 to-slate-100">
       <div className="bg-white/90 p-8 rounded-2xl shadow-xl w-full max-w-md space-y-7 animate-fade-in">
+        {/* Clickable logo to home */}
+        <a
+          href="/"
+          className="self-center font-bold text-2xl tracking-tight text-primary hover:underline focus:outline-none mb-2 block text-center"
+          aria-label="Task Hub Home"
+          tabIndex={0}
+        >
+          Task Hub
+        </a>
         <h1 className="text-2xl font-bold text-primary text-center">{mode === "login" ? "Log in" : "Sign up"}</h1>
         <form className="space-y-4" onSubmit={handleAuth}>
           <div>

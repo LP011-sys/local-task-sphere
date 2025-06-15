@@ -44,6 +44,15 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-blue-50 to-slate-100">
       <Card className="w-full max-w-lg mx-auto p-8 flex flex-col gap-8 animate-fade-in">
+        {/* Clickable logo to home */}
+        <a
+          href="/"
+          className="self-center font-bold text-2xl tracking-tight text-primary hover:underline focus:outline-none mb-2"
+          aria-label="Task Hub Home"
+          tabIndex={0}
+        >
+          Task Hub
+        </a>
         <h1 className="text-2xl sm:text-3xl font-bold text-center mb-3 text-primary">
           What would you like to do on Task Hub?
         </h1>
