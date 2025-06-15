@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { FcGoogle } from "react-icons/fc";
+import { SiApple } from "react-icons/si";
 
 export default function AuthPage() {
   const [mode, setMode] = useState<"login" | "signup">("login");
@@ -41,7 +43,7 @@ export default function AuthPage() {
           return;
         }
         toast({ title: "Logged in!", description: "Welcome back 😊" });
-        navigate("/"); // Redirect to home instead of /ProfileSettings
+        navigate("/"); // Redirect to home after login
         return;
       } else {
         const { error } = await supabase.auth.signUp({
@@ -57,12 +59,29 @@ export default function AuthPage() {
           return;
         }
         toast({ title: "Check your email!", description: "A confirmation link was sent." });
+        // Redirect to onboarding after sign up
+        setTimeout(() => navigate("/onboarding", { replace: true }), 1300);
       }
     } catch (err: any) {
       setError(err.message ?? "An error occurred");
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleOAuth(provider: "google" | "apple") {
+    setLoading(true); setError(null);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: window.location.origin + "/onboarding",
+      }
+    });
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+    }
+    // Supabase will redirect on success
   }
 
   return (
@@ -90,6 +109,32 @@ export default function AuthPage() {
           <Button type="submit" className="w-full" disabled={loading}>{loading ? "Loading..." : mode === "login" ? "Log in" : "Sign up"}</Button>
           {error && <div className="text-destructive text-sm text-center mt-2">{error}</div>}
         </form>
+
+        <div className="flex items-center gap-3 my-2">
+          <div className="flex-1 h-px bg-muted-foreground/20"/>
+          <span className="text-xs text-muted-foreground">or</span>
+          <div className="flex-1 h-px bg-muted-foreground/20"/>
+        </div>
+        <div className="flex flex-col gap-2">
+          <Button
+            variant="outline"
+            className="w-full flex items-center justify-center gap-2"
+            type="button"
+            disabled={loading}
+            onClick={() => handleOAuth("google")}
+          >
+            <span><FcGoogle /></span>Sign {mode === "login" ? "in" : "up"} with Google
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full flex items-center justify-center gap-2"
+            type="button"
+            disabled={loading}
+            onClick={() => handleOAuth("apple")}
+          >
+            <span><SiApple /></span>Sign {mode === "login" ? "in" : "up"} with Apple
+          </Button>
+        </div>
         <div className="flex flex-col items-center gap-1">
           <Button
             variant="link"
@@ -104,3 +149,4 @@ export default function AuthPage() {
     </div>
   );
 }
+
