@@ -1,198 +1,165 @@
-import React, { useState } from "react";
-import RoleSelector, { roles } from "@/components/RoleSelector";
-import NavBar from "@/components/NavBar";
+import React, { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Loader2, LogIn } from "lucide-react";
 import { I18nProvider, useI18n } from "@/contexts/I18nContext";
 
-type Role = "customer" | "provider" | "admin";
-const defaultTab: Record<Role, string> = {
-  customer: "dashboard",
-  provider: "task-feed",
-  admin: "user-manager"
-};
-
 // Utility table component for basic array display
-import { Table, TableHeader, TableRow, TableHead, TableCell, TableBody, TableCaption } from "@/components/ui/table";
+import { Table, TableHeader, TableRow, TableHead, TableCell, TableBody } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
 
-// Wrapper per-role tabs and current page
-function RoleHome({ initialRole = "customer" }: { initialRole?: Role }) {
-  const [role, setRole] = useState<Role>(initialRole);
-  const [activeTab, setActiveTab] = useState(defaultTab[initialRole]);
-  const { t } = useI18n();
+function useAuthState() {
+  const [authed, setAuthed] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
-  // Map for role/tab to page component
-  const TabComponent = (() => {
-    switch (role) {
-      case "customer":
-        switch (activeTab) {
-          case "dashboard": return <CustomerDashboard />;
-          case "post-task": return <CustomerPostTask />;
-          case "my-tasks": return <CustomerMyTasks />;
-          case "offers": return <CustomerOffers />;
-          case "messages": return <CustomerMessages />;
-          case "profile": return <CustomerProfile />;
-          case "settings": return <CustomerSettings />;
-          default: return <CustomerDashboard />;
-        }
-      case "provider":
-        switch (activeTab) {
-          case "task-feed": return <ProviderTaskFeed />;
-          case "my-offers": return <ProviderMyOffers />;
-          case "accepted-tasks": return <ProviderAcceptedTasks />;
-          case "messages": return <ProviderMessages />;
-          case "earnings": return <ProviderEarnings />;
-          case "profile": return <ProviderProfile />;
-          case "settings": return <ProviderSettings />;
-          default: return <ProviderTaskFeed />;
-        }
-      // Hide admin tabs in Index - admin dashboard is routed at /admin
-      default:
-        return <div />;
-    }
-  })();
-
-  return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-white via-blue-50 to-slate-100">
-      <NavBar
-        role={role}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        onRoleChange={role => {
-          setRole(role as Role);
-          setActiveTab(defaultTab[role as Role]);
-        }}
-      />
-      <main className="flex-grow flex justify-center items-start px-2 py-8">
-        <section className="w-full max-w-3xl rounded-2xl bg-white/95 shadow-lg p-8 animate-fade-in min-h-[500px]">
-          {TabComponent}
-        </section>
-      </main>
-    </div>
-  );
-}
-
-export default function Index() {
-  const [selectedRole, setSelectedRole] = React.useState<"customer" | "provider" | "admin" | null>(null);
-  const [authed, setAuthed] = React.useState(false);
-
-  React.useEffect(() => {
-    // Listen for login status
+  useEffect(() => {
+    // Listen to login status changes
     const sub = supabase.auth.onAuthStateChange((_event, session) => {
       setAuthed(!!session?.user);
+      setUser(session?.user ?? null);
     });
     supabase.auth.getUser().then(({ data }) => {
       setAuthed(!!data?.user);
+      setUser(data?.user ?? null);
     });
     return () => {
       sub.data.subscription?.unsubscribe?.();
     };
   }, []);
 
+  return { authed, user };
+}
+
+export default function Index() {
+  const { authed, user } = useAuthState();
+
   return (
     <I18nProvider>
-      <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-slate-100">
-        {!authed ? (
-          <div className="flex flex-col items-center justify-center min-h-screen">
-            <h1 className="text-5xl font-bold mb-6 text-primary drop-shadow">{'Task Hub'}</h1>
-            <RoleSelector value="customer" onChange={role => setSelectedRole(role)} />
+      <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-slate-100 flex flex-col">
+        {/* Header/Landing Nav */}
+        <header className="w-full px-6 py-4 flex items-center justify-between bg-white/90 shadow sticky top-0 z-10">
+          <div className="flex items-center gap-3">
+            <span className="font-bold text-3xl text-primary drop-shadow-sm select-none">Task Hub</span>
+          </div>
+          <nav className="flex gap-3">
+            <a
+              href="#tasks"
+              className="font-semibold hover:text-primary/80 transition"
+            >
+              Browse Tasks
+            </a>
+            <a
+              href="#offers"
+              className="font-semibold hover:text-primary/80 transition"
+            >
+              Provider Offers
+            </a>
+            <a
+              href="#favorites"
+              className="font-semibold hover:text-primary/80 transition"
+            >
+              Favorites
+            </a>
+            <a
+              href="/post-task"
+              className="font-semibold hover:text-green-700 transition"
+            >
+              Post a Task
+            </a>
+            <a
+              href="/premium"
+              className="font-semibold hover:text-yellow-600 transition"
+            >
+              Premium
+            </a>
+          </nav>
+          {authed ? (
+            <a
+              href="/profile"
+              className="inline-flex items-center gap-2 rounded-lg px-3 py-2 bg-primary text-primary-foreground font-semibold hover:bg-primary/80 shadow"
+            >
+              Account
+            </a>
+          ) : (
             <a
               href="/auth"
-              className="mt-6 text-blue-700 underline underline-offset-2 font-semibold"
+              className="inline-flex items-center gap-2 rounded-lg px-3 py-2 bg-primary text-primary-foreground font-semibold hover:bg-primary/80 shadow"
             >
-              Log in / Sign up →
+              <LogIn className="w-4 h-4" />
+              Log in / Sign up
             </a>
+          )}
+        </header>
+        {/* Hero section */}
+        <section className="flex flex-col md:flex-row items-center justify-between gap-10 p-8 max-w-7xl w-full mx-auto">
+          <div className="flex flex-col gap-4 max-w-xl md:text-left text-center items-start md:items-start">
+            <h1 className="text-5xl font-extrabold text-primary drop-shadow mb-3">Find the right person for your task, fast.</h1>
+            <p className="text-lg text-muted-foreground mb-3">
+              Welcome to <span className="font-semibold text-accent-foreground">Task Hub</span>, your place to post tasks or offer services.<br />
+              Instantly find help, make offers, and collaborate in your local area.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 mt-3">
+              <a href="/post-task">
+                <Button size="lg" className="text-base">Post a Task</Button>
+              </a>
+              <a href="#tasks">
+                <Button variant="outline" size="lg" className="text-base">Browse Tasks</Button>
+              </a>
+              {authed && (
+                <a href="/dashboard">
+                  <Button variant="secondary" size="lg" className="text-base">View My Dashboard</Button>
+                </a>
+              )}
+            </div>
           </div>
-        ) : !selectedRole ? (
-          <div className="flex flex-col items-center justify-center min-h-screen">
-            <h1 className="text-5xl font-bold mb-6 text-primary drop-shadow">{'Task Hub'}</h1>
-            <RoleSelector value="customer" onChange={role => setSelectedRole(role)} />
-          </div>
-        ) : (
-          <RoleHome initialRole={selectedRole} />
-        )}
+          <img
+            src="/placeholder.svg"
+            alt="Task hub art"
+            className="w-80 h-48 object-contain drop-shadow-xl mt-6 md:mt-0"
+            draggable={false}
+          />
+        </section>
+        <main className="flex-grow w-full max-w-7xl mx-auto px-4 py-5 space-y-16">
+          {/* Task Table */}
+          <section id="tasks" className="space-y-2">
+            <h2 className="text-2xl font-bold mb-2 text-blue-900">Latest Tasks</h2>
+            <CustomerTasksTable />
+            <div className="text-right text-sm mt-1">
+              <a href="/dashboard" className="text-primary underline underline-offset-4">View all tasks</a>
+            </div>
+          </section>
+          {/* Offers */}
+          <section id="offers" className="space-y-2">
+            <h2 className="text-2xl font-bold mb-2 text-blue-900">Provider Offers</h2>
+            <CustomerOffersTable />
+            <div className="text-right text-sm mt-1">
+              <a href="/offers" className="text-primary underline underline-offset-4">See more offers</a>
+            </div>
+          </section>
+          {/* Favorites */}
+          <section id="favorites" className="space-y-2">
+            <h2 className="text-2xl font-bold mb-2 text-blue-900">Popular Favorites</h2>
+            <CustomerFavoritesTable />
+            <div className="text-right text-sm mt-1">
+              <a href="/favorites" className="text-primary underline underline-offset-4">See my favorites</a>
+            </div>
+          </section>
+        </main>
+        {/* Footer */}
+        <footer className="border-t py-4 w-full bg-white/80 text-center text-sm text-muted-foreground">
+          &copy; {new Date().getFullYear()} Task Hub. <a href="https://docs.lovable.dev/" className="underline">About this app</a>
+        </footer>
       </div>
     </I18nProvider>
   );
 }
 
-// ----------- CUSTOMER PAGE STUBS (with DATA) -----------
-function CustomerDashboard() { 
-  return <CustomerDataExplorer />;
-}
-function CustomerPostTask() {
-  const { t } = useI18n();
-  // Link to the real wizard page
-  return (
-    <Section
-      title={t("postTask")}
-      description={
-        <span>
-          Describe a new task for providers.<br />
-          <a
-            href="/task-create"
-            className="inline-flex gap-2 items-center mt-3 text-blue-800 hover:underline underline-offset-4 font-semibold"
-          >
-            Go to Task Creation Wizard →
-          </a>
-        </span>
-      }
-    />
-  );
-}
-function CustomerMyTasks() { 
-  return <CustomerTasksTable />;
-}
-function CustomerOffers() { 
-  return <CustomerOffersTable />;
-}
-function CustomerMessages() { const { t } = useI18n(); return <Section title={t("messages")} description="Direct messages and negotiations." />; }
-function CustomerProfile() { const { t } = useI18n(); return <Section title={t("profile")} description="View and edit your customer profile." />; }
-function CustomerSettings() { const { t } = useI18n(); return <Section title={t("settings")} description="Configure your account." />; }
+// Table Components copied from old file, unchanged
 
-// ----------- PROVIDER PAGE STUBS (with DATA) -----------
-function ProviderTaskFeed() { 
-  return <ProviderTasksTable />;
-}
-function ProviderMyOffers() { 
-  return <ProviderOffersTable />;
-}
-function ProviderAcceptedTasks() { const { t } = useI18n(); return <Section title={t("acceptedTasks")} description="Tasks you've accepted to complete." />; }
-function ProviderMessages() { const { t } = useI18n(); return <Section title={t("messages")} description="Direct messages and negotiations." />; }
-function ProviderEarnings() { 
-  return <ProviderPaymentsTable />;
-}
-function ProviderProfile() { const { t } = useI18n(); return <Section title={t("profile")} description="Manage your provider profile." />; }
-function ProviderSettings() { const { t } = useI18n(); return <Section title={t("settings")} description="Configure your account." />; }
-
-// ----------- Data Explorer TABLE COMPONENTS --------------------
-
-// CUSTOMER tables
-function CustomerDataExplorer() {
-  return (
-    <div>
-      <h2 className="text-2xl font-bold mb-3">Customer Demo Data</h2>
-      <div className="space-y-8">
-        <CustomerTasksTable />
-        <CustomerOffersTable />
-        <CustomerFavoritesTable />
-        <CustomerPaymentsTable />
-        <CustomerReviewsTable />
-      </div>
-    </div>
-  );
-}
 function CustomerTasksTable() {
-  const { data, isLoading } = useQuery({
-    queryKey: ["Tasks"],
-    queryFn: async () => {
-      const { data } = await supabase.from("Tasks").select("*").order("created_at", { ascending: false });
-      return data ?? [];
-    },
-  });
+  const { data, isLoading } = useTasks();
   return (
-    <div>
+    <div className="rounded-xl bg-white/90 shadow p-4 overflow-x-auto">
       <h3 className="font-bold text-lg mb-1">Tasks</h3>
       {isLoading ? <Loader2 className="animate-spin" /> : (
         <Table>
@@ -206,7 +173,7 @@ function CustomerTasksTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.map((t:any) => (
+            {(data ?? []).slice(0, 6).map((t:any) => (
               <TableRow key={t.id}>
                 <TableCell>{t.offer || t.description}</TableCell>
                 <TableCell>{t.status}</TableCell>
@@ -222,15 +189,9 @@ function CustomerTasksTable() {
   );
 }
 function CustomerOffersTable() {
-  const { data, isLoading } = useQuery({
-    queryKey: ["offers-customer"],
-    queryFn: async () => {
-      const { data } = await supabase.from("offers").select("*").order("created_at", { ascending: false });
-      return data ?? [];
-    },
-  });
+  const { data, isLoading } = useOffers();
   return (
-    <div>
+    <div className="rounded-xl bg-white/90 shadow p-4 overflow-x-auto">
       <h3 className="font-bold text-lg mb-1">Offers</h3>
       {isLoading ? <Loader2 className="animate-spin" /> : (
         <Table>
@@ -245,7 +206,7 @@ function CustomerOffersTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.map((o: any) => (
+            {(data ?? []).slice(0, 6).map((o: any) => (
               <TableRow key={o.id}>
                 <TableCell>{o.task_id}</TableCell>
                 <TableCell>{o.provider_id}</TableCell>
@@ -262,15 +223,9 @@ function CustomerOffersTable() {
   );
 }
 function CustomerFavoritesTable() {
-  const { data, isLoading } = useQuery({
-    queryKey: ["favorites"],
-    queryFn: async () => {
-      const { data } = await supabase.from("favorites").select("*").order("created_at", { ascending: false });
-      return data ?? [];
-    },
-  });
+  const { data, isLoading } = useFavorites();
   return (
-    <div>
+    <div className="rounded-xl bg-white/90 shadow p-4 overflow-x-auto">
       <h3 className="font-bold text-lg mb-1">Favorites</h3>
       {isLoading ? <Loader2 className="animate-spin" /> : (
         <Table>
@@ -282,7 +237,7 @@ function CustomerFavoritesTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.map((f: any) => (
+            {(data ?? []).slice(0, 6).map((f: any) => (
               <TableRow key={f.id}>
                 <TableCell>{f.customer_id}</TableCell>
                 <TableCell>{f.provider_id}</TableCell>
@@ -295,98 +250,73 @@ function CustomerFavoritesTable() {
     </div>
   );
 }
-function CustomerPaymentsTable() {
-  const { data, isLoading } = useQuery({
-    queryKey: ["payments"],
+
+// Data hooks (concise, simple wrappers)
+function useTasks() {
+  return useQuery({
+    queryKey: ["Tasks"],
     queryFn: async () => {
-      const { data } = await supabase.from("payments").select("*").order("created_at", { ascending: false });
+      const { data } = await supabase.from("Tasks").select("*").order("created_at", { ascending: false });
       return data ?? [];
     },
   });
-  return (
-    <div>
-      <h3 className="font-bold text-lg mb-1">Payments</h3>
-      {isLoading ? <Loader2 className="animate-spin" /> : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Task ID</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Provider</TableHead>
-              <TableHead>Total</TableHead>
-              <TableHead>Platform Fee</TableHead>
-              <TableHead>Provider Amount</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created At</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.map((p:any) => (
-              <TableRow key={p.id}>
-                <TableCell>{p.task_id}</TableCell>
-                <TableCell>{p.customer_id}</TableCell>
-                <TableCell>{p.provider_id}</TableCell>
-                <TableCell>€{p.amount_total}</TableCell>
-                <TableCell>€{p.amount_platform_fee}</TableCell>
-                <TableCell>€{p.amount_provider}</TableCell>
-                <TableCell>{p.status}</TableCell>
-                <TableCell>{p.created_at ? new Date(p.created_at).toLocaleString() : "-"}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
-    </div>
-  );
 }
-function CustomerReviewsTable() {
-  const { data, isLoading } = useQuery({
-    queryKey: ["reviews"],
+function useOffers() {
+  return useQuery({
+    queryKey: ["offers-customer"],
     queryFn: async () => {
-      const { data } = await supabase.from("reviews").select("*").order("created_at", { ascending: false });
+      const { data } = await supabase.from("offers").select("*").order("created_at", { ascending: false });
       return data ?? [];
     },
   });
+}
+function useFavorites() {
+  return useQuery({
+    queryKey: ["favorites"],
+    queryFn: async () => {
+      const { data } = await supabase.from("favorites").select("*").order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+}
+
+type Role = "customer" | "provider" | "admin";
+const defaultTab: Record<Role, string> = {
+  customer: "dashboard",
+  provider: "task-feed",
+  admin: "user-manager"
+};
+
+// Utility table component for basic array display
+function RoleSelector({ value, onChange }: { value: string, onChange: (role: string) => void }) {
+  const roles = [
+    { id: "customer", name: "Customer", description: "Post tasks and hire providers" },
+    { id: "provider", name: "Provider", description: "Find tasks and offer your services" },
+    { id: "admin", name: "Admin", description: "Manage the platform" },
+  ];
+  
   return (
-    <div>
-      <h3 className="font-bold text-lg mb-1">Reviews</h3>
-      {isLoading ? <Loader2 className="animate-spin" /> : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Task ID</TableHead>
-              <TableHead>Reviewer ID</TableHead>
-              <TableHead>Reviewed User</TableHead>
-              <TableHead>Rating</TableHead>
-              <TableHead>Comment</TableHead>
-              <TableHead>Created At</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.map((r:any) => (
-              <TableRow key={r.id}>
-                <TableCell>{r.task_id}</TableCell>
-                <TableCell>{r.reviewer_id}</TableCell>
-                <TableCell>{r.reviewed_user_id}</TableCell>
-                <TableCell>{r.rating}</TableCell>
-                <TableCell>{r.comment}</TableCell>
-                <TableCell>{r.created_at ? new Date(r.created_at).toLocaleString() : "-"}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+    <div className="flex flex-col md:flex-row gap-4 w-full max-w-3xl">
+      {roles.map(role => (
+        <div
+          key={role.id}
+          className={`flex-1 p-6 rounded-xl cursor-pointer transition-all ${
+            value === role.id
+              ? "bg-primary text-primary-foreground shadow-lg scale-105"
+              : "bg-white hover:bg-blue-50"
+          }`}
+          onClick={() => onChange(role.id)}
+        >
+          <h3 className="text-xl font-bold mb-2">{role.name}</h3>
+          <p className={value === role.id ? "text-primary-foreground/90" : "text-muted-foreground"}>
+            {role.description}
+          </p>
+        </div>
+      ))}
     </div>
   );
 }
 
-// PROVIDER tables (reuse task/offers/payments/reviews but could add their own filters)
-function ProviderTasksTable() { return <CustomerTasksTable />; }
-function ProviderOffersTable() { return <CustomerOffersTable />; }
-function ProviderPaymentsTable() { return <CustomerPaymentsTable />; }
-
-// ----------- GENERIC PAGE SECTION -----------
-// Change description?: string to description?: React.ReactNode
 function Section({ title, description }: { title: string; description?: React.ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center h-[320px] gap-4 animate-fade-in">
