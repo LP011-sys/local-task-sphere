@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -53,10 +52,7 @@ const App = () => (
           </Route>
 
           {/* All other public/user routes UNDER AppLayout */}
-          <Route element={<AppLayout>
-            {/* Removed the RequireAuth wrapper so the app doesn't require authentication */}
-            <React.Fragment />
-          </AppLayout>}>
+          <Route element={<AppLayout />}>
             {/* All routes below are now public */}
             <Route index element={<Index />} />
             <Route path="/dashboard" element={<ProviderDashboard />} />
@@ -77,4 +73,3 @@ const App = () => (
 );
 
 export default App;
-
