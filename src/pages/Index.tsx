@@ -1,10 +1,9 @@
+
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Loader2, LogIn } from "lucide-react";
-import { I18nProvider, useI18n } from "@/contexts/I18nContext";
-
-// Utility table component for basic array display
+import { I18nProvider } from "@/contexts/I18nContext";
 import { Table, TableHeader, TableRow, TableHead, TableCell, TableBody } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 
@@ -13,7 +12,6 @@ function useAuthState() {
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    // Listen to login status changes
     const sub = supabase.auth.onAuthStateChange((_event, session) => {
       setAuthed(!!session?.user);
       setUser(session?.user ?? null);
@@ -31,12 +29,11 @@ function useAuthState() {
 }
 
 export default function Index() {
-  const { authed, user } = useAuthState();
+  const { authed } = useAuthState();
 
   return (
     <I18nProvider>
       <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-slate-100 flex flex-col">
-        {/* Header/Landing Nav */}
         <header className="w-full px-6 py-4 flex items-center justify-between bg-white/90 shadow sticky top-0 z-10">
           <div className="flex items-center gap-3">
             <span className="font-bold text-3xl text-primary drop-shadow-sm select-none">Task Hub</span>
@@ -154,104 +151,151 @@ export default function Index() {
   );
 }
 
-// Table Components copied from old file, unchanged
-
 function CustomerTasksTable() {
-  const { data, isLoading } = useTasks();
+  const { data, isLoading, error } = useTasks();
+  if (isLoading) {
+    return (
+      <div className="text-center py-10">
+        <Loader2 className="animate-spin mx-auto text-blue-400" />
+        <span className="block mt-2 text-muted-foreground">Loading tasks...</span>
+      </div>
+    );
+  }
+  if (error) {
+    return <div className="text-danger text-center py-6">Failed to load tasks.</div>;
+  }
+  if (!data || data.length === 0) {
+    return (
+      <div className="text-center py-6 text-muted-foreground">
+        No tasks found. Be the first to <a href="/post-task" className="underline text-primary">post a task</a>!
+      </div>
+    );
+  }
   return (
     <div className="rounded-xl bg-white/90 shadow p-4 overflow-x-auto">
       <h3 className="font-bold text-lg mb-1">Tasks</h3>
-      {isLoading ? <Loader2 className="animate-spin" /> : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>Deadline</TableHead>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Title</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Category</TableHead>
+            <TableHead>Price</TableHead>
+            <TableHead>Deadline</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {(data ?? []).slice(0, 6).map((t:any) => (
+            <TableRow key={t.id}>
+              <TableCell>{t.offer || t.description}</TableCell>
+              <TableCell>{t.status}</TableCell>
+              <TableCell>{t.category}</TableCell>
+              <TableCell>€{t.price}</TableCell>
+              <TableCell>{t.deadline ? new Date(t.deadline).toLocaleString() : "-"}</TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {(data ?? []).slice(0, 6).map((t:any) => (
-              <TableRow key={t.id}>
-                <TableCell>{t.offer || t.description}</TableCell>
-                <TableCell>{t.status}</TableCell>
-                <TableCell>{t.category}</TableCell>
-                <TableCell>€{t.price}</TableCell>
-                <TableCell>{t.deadline ? new Date(t.deadline).toLocaleString() : "-"}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
-    </div>
-  );
-}
-function CustomerOffersTable() {
-  const { data, isLoading } = useOffers();
-  return (
-    <div className="rounded-xl bg-white/90 shadow p-4 overflow-x-auto">
-      <h3 className="font-bold text-lg mb-1">Offers</h3>
-      {isLoading ? <Loader2 className="animate-spin" /> : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Task ID</TableHead>
-              <TableHead>Provider ID</TableHead>
-              <TableHead>Message</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created At</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {(data ?? []).slice(0, 6).map((o: any) => (
-              <TableRow key={o.id}>
-                <TableCell>{o.task_id}</TableCell>
-                <TableCell>{o.provider_id}</TableCell>
-                <TableCell>{o.message}</TableCell>
-                <TableCell>{o.price}</TableCell>
-                <TableCell>{o.status}</TableCell>
-                <TableCell>{o.created_at ? new Date(o.created_at).toLocaleString() : "-"}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
-    </div>
-  );
-}
-function CustomerFavoritesTable() {
-  const { data, isLoading } = useFavorites();
-  return (
-    <div className="rounded-xl bg-white/90 shadow p-4 overflow-x-auto">
-      <h3 className="font-bold text-lg mb-1">Favorites</h3>
-      {isLoading ? <Loader2 className="animate-spin" /> : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Customer ID</TableHead>
-              <TableHead>Provider ID</TableHead>
-              <TableHead>Created At</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {(data ?? []).slice(0, 6).map((f: any) => (
-              <TableRow key={f.id}>
-                <TableCell>{f.customer_id}</TableCell>
-                <TableCell>{f.provider_id}</TableCell>
-                <TableCell>{f.created_at ? new Date(f.created_at).toLocaleString() : "-"}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }
 
-// Data hooks (concise, simple wrappers)
+function CustomerOffersTable() {
+  const { data, isLoading, error } = useOffers();
+  if (isLoading) {
+    return (
+      <div className="text-center py-10">
+        <Loader2 className="animate-spin mx-auto text-blue-400" />
+        <span className="block mt-2 text-muted-foreground">Loading offers...</span>
+      </div>
+    );
+  }
+  if (error) {
+    return <div className="text-danger text-center py-6">Failed to load offers.</div>;
+  }
+  if (!data || data.length === 0) {
+    return (
+      <div className="text-center py-6 text-muted-foreground">
+        No offers found. <a href="/offers" className="underline text-primary">Explore offers</a>.
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-xl bg-white/90 shadow p-4 overflow-x-auto">
+      <h3 className="font-bold text-lg mb-1">Offers</h3>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Task ID</TableHead>
+            <TableHead>Provider ID</TableHead>
+            <TableHead>Message</TableHead>
+            <TableHead>Price</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Created At</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {(data ?? []).slice(0, 6).map((o: any) => (
+            <TableRow key={o.id}>
+              <TableCell>{o.task_id}</TableCell>
+              <TableCell>{o.provider_id}</TableCell>
+              <TableCell>{o.message}</TableCell>
+              <TableCell>{o.price}</TableCell>
+              <TableCell>{o.status}</TableCell>
+              <TableCell>{o.created_at ? new Date(o.created_at).toLocaleString() : "-"}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function CustomerFavoritesTable() {
+  const { data, isLoading, error } = useFavorites();
+  if (isLoading) {
+    return (
+      <div className="text-center py-10">
+        <Loader2 className="animate-spin mx-auto text-blue-400" />
+        <span className="block mt-2 text-muted-foreground">Loading favorites...</span>
+      </div>
+    );
+  }
+  if (error) {
+    return <div className="text-danger text-center py-6">Failed to load favorites.</div>;
+  }
+  if (!data || data.length === 0) {
+    return (
+      <div className="text-center py-6 text-muted-foreground">
+        No favorites yet. Browse providers and click the heart to add favorites!
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-xl bg-white/90 shadow p-4 overflow-x-auto">
+      <h3 className="font-bold text-lg mb-1">Favorites</h3>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Customer ID</TableHead>
+            <TableHead>Provider ID</TableHead>
+            <TableHead>Created At</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {(data ?? []).slice(0, 6).map((f: any) => (
+            <TableRow key={f.id}>
+              <TableCell>{f.customer_id}</TableCell>
+              <TableCell>{f.provider_id}</TableCell>
+              <TableCell>{f.created_at ? new Date(f.created_at).toLocaleString() : "-"}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 function useTasks() {
   return useQuery({
     queryKey: ["Tasks"],
