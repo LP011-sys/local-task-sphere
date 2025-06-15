@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -8,7 +9,6 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import OnboardingPage from "./pages/OnboardingPage";
 import AdminDashboard from "@/pages/AdminDashboard";
-// NEW: Import our admin nested pages
 import AdminUsersPage from "@/pages/admin/AdminUsersPage";
 import AdminTasksPage from "@/pages/admin/AdminTasksPage";
 import AdminReportsPage from "@/pages/admin/AdminReportsPage";
@@ -17,9 +17,6 @@ import AdminPushPage from "@/pages/admin/AdminPushPage";
 import PremiumPackages from "./pages/PremiumPackages";
 import AuthPage from "@/pages/AuthPage";
 import AppLayout from "@/layout/AppLayout";
-// Removed: import RequireAuth from "@/components/RequireAuth";
-
-// Add page imports (below previous ones)
 import TaskCreationWizard from "@/pages/TaskCreationWizard";
 import ProviderDashboard from "@/pages/ProviderDashboard";
 import CustomerOffers from "@/pages/CustomerOffers";
@@ -41,7 +38,7 @@ const App = () => (
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/auth" element={<AuthPage />} />
 
-          {/* Admin dashboard and nested routes (untouched) */}
+          {/* Admin dashboard and nested routes */}
           <Route path="/admin" element={<AdminDashboard />}>
             <Route index element={<Navigate to="users" replace />} />
             <Route path="users" element={<AdminUsersPage />} />
@@ -53,7 +50,6 @@ const App = () => (
 
           {/* All other public/user routes UNDER AppLayout */}
           <Route element={<AppLayout />}>
-            {/* All routes below are now public */}
             <Route index element={<Index />} />
             <Route path="/dashboard" element={<ProviderDashboard />} />
             <Route path="/post-task" element={<TaskCreationWizard />} />
@@ -63,7 +59,6 @@ const App = () => (
             <Route path="/profile" element={<ProfileSettings />} />
             <Route path="/review" element={<LeaveReview />} />
             <Route path="/premium" element={<PremiumPackages />} />
-            {/* fallback */}
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
