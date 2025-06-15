@@ -1,6 +1,3 @@
-
-// Entrypoint: role switcher, then shows relevant home page in a framed card
-
 import React, { useState } from "react";
 import RoleSelector, { roles } from "@/components/RoleSelector";
 import NavBar from "@/components/NavBar";
@@ -100,7 +97,26 @@ export default function Index() {
 
 // ----------- CUSTOMER PAGE STUBS -----------
 function CustomerDashboard() { const { t } = useI18n(); return <Section title={t("dashboard")} description="Your summary and new tasks." />; }
-function CustomerPostTask() { const { t } = useI18n(); return <Section title={t("postTask")} description="Describe a new task for providers." />; }
+function CustomerPostTask() {
+  const { t } = useI18n();
+  // Link to the real wizard page
+  return (
+    <Section
+      title={t("postTask")}
+      description={
+        <span>
+          Describe a new task for providers.<br />
+          <a
+            href="/task-create"
+            className="inline-flex gap-2 items-center mt-3 text-blue-800 hover:underline underline-offset-4 font-semibold"
+          >
+            Go to Task Creation Wizard →
+          </a>
+        </span>
+      }
+    />
+  );
+}
 function CustomerMyTasks() { const { t } = useI18n(); return <Section title={t("myTasks")} description="All tasks you've posted." />; }
 function CustomerOffers() { const { t } = useI18n(); return <Section title={t("offers")} description="Review offers from providers." />; }
 function CustomerMessages() { const { t } = useI18n(); return <Section title={t("messages")} description="Direct messages and negotiations." />; }
