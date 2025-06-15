@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import OnboardingLanguageStep from "../components/onboarding/OnboardingLanguageStep";
@@ -47,10 +46,10 @@ export default function OnboardingPage() {
         </div>
         <div className="flex gap-4 justify-between pt-2">
           <Button variant="outline" onClick={handleBack} disabled={step === 0}>
-            {t("Back") || "Back"}
+            Back
           </Button>
           <Button onClick={handleNext}>
-            {isLast ? (t("Finish") || "Finish") : (t("Next") || "Next")}
+            {isLast ? "Finish" : "Next"}
           </Button>
         </div>
       </Card>
