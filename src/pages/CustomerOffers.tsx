@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
+import { useTaskStatusMutation } from "@/hooks/useTaskStatusMutation";
 
 // Utility to format provider name fallback
 function formatProviderName(offer: any) {
@@ -16,6 +17,7 @@ export default function CustomerOffers() {
   const { data: tasks, isLoading, isError, error } = useCustomerTaskOffers();
   const [expandedTaskIds, setExpandedTaskIds] = useState<string[]>([]);
   const updateStatus = useUpdateOfferStatus();
+  const taskStatusMutation = useTaskStatusMutation();
 
   // Handlers for expand/collapse
   const toggleExpand = (taskId: string) => {
@@ -26,13 +28,17 @@ export default function CustomerOffers() {
     );
   };
 
-  // Accept or Reject offer
+  // Accept or Reject offer (update task.status to in_progress on accept)
   const handleOfferAction = async (
     offerId: string,
-    action: "accepted" | "rejected"
+    action: "accepted" | "rejected",
+    taskId?: string
   ) => {
     try {
       await updateStatus.mutateAsync({ offerId, status: action });
+      if (action === "accepted" && taskId) {
+        await taskStatusMutation.mutateAsync({ taskId, status: "in_progress" });
+      }
       toast({
         title:
           action === "accepted"
@@ -175,7 +181,7 @@ export default function CustomerOffers() {
                               <Button
                                 size="sm"
                                 onClick={() =>
-                                  handleOfferAction(offer.id, "accepted")
+                                  handleOfferAction(offer.id, "accepted", offer.task_id)
                                 }
                               >
                                 Accept
@@ -184,7 +190,7 @@ export default function CustomerOffers() {
                                 size="sm"
                                 variant="destructive"
                                 onClick={() =>
-                                  handleOfferAction(offer.id, "rejected")
+                                  handleOfferAction(offer.id, "rejected", offer.task_id)
                                 }
                               >
                                 Reject

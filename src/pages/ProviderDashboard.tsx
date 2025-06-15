@@ -19,6 +19,8 @@ import MyOffersList from "./ProviderDashboard/MyOffersList";
 import AcceptedTasksList from "./ProviderDashboard/AcceptedTasksList";
 import CompletedTasksList from "./ProviderDashboard/CompletedTasksList";
 import EarningsSummary from "./ProviderDashboard/EarningsSummary";
+import { useProviderTasks } from "@/hooks/useProviderTasks";
+import { Loader2 } from "lucide-react";
 
 // --------- MOCK DATA ---------
 const MOCK_OFFERS = [
@@ -126,6 +128,8 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function ProviderDashboard() {
   const [tab, setTab] = useState("offers");
+  const { data: openTasks, isLoading } = useProviderTasks(undefined, "open");
+
   const [offers, setOffers] = useState(MOCK_OFFERS);
   // accepted status now matches backend
   const [accepted, setAccepted] = useState(MOCK_ACCEPTED_TASKS);
@@ -208,8 +212,69 @@ export default function ProviderDashboard() {
     }
   }
 
+  // PROVIDER TASK FEED — replaces previous mock/AcceptedTasksList
+  function renderTaskFeed() {
+    if (isLoading) {
+      return (
+        <div className="flex justify-center items-center h-80">
+          <Loader2 className="animate-spin w-10 h-10 text-muted-foreground" />
+        </div>
+      );
+    }
+    if (!openTasks || openTasks.length === 0) {
+      return (
+        <div className="bg-white rounded-xl shadow-md p-8 border text-center text-muted-foreground">
+          No tasks available at this time.
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-4">
+        {openTasks.map((t: any) => (
+          <div
+            key={t.id}
+            className={`bg-white rounded-xl shadow-md p-6 border flex flex-col sm:flex-row sm:items-center justify-between gap-3
+            ${t.boost_status === "24h"
+              ? "border-2 border-yellow-400 ring-2 ring-yellow-300"
+              : t.boost_status === "8h"
+              ? "border-2 border-blue-400 ring-2 ring-blue-300"
+              : ""}`}
+          >
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-bold text-lg truncate">{t.offer || t.description}</span>
+                {(t.boost_status === "24h" || t.boost_status === "8h") && (
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 ml-2`}>
+                    {t.boost_status === "24h" ? "🔥 24h Boost" : "⚡ 8h Boost"}
+                  </span>
+                )}
+              </div>
+              <div className="text-sm text-muted-foreground mb-1">
+                Category: <span className="font-medium">{t.category}</span>
+                {t.deadline && (
+                  <> | Deadline: <span>{t.deadline ? new Date(t.deadline).toLocaleString() : "-"}</span></>
+                )}
+              </div>
+              <div className="text-sm text-primary font-medium">
+                {t.price ? <>Budget: <span className="font-semibold">€{t.price}</span></> : "Budget: —"}
+              </div>
+            </div>
+            <Button
+              className="min-w-[120px] w-full sm:w-auto mt-2 sm:mt-0"
+              onClick={() => alert("Offer modal not implemented in this demo.")}
+              variant="default"
+            >
+              Make Offer
+            </Button>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-3xl mx-auto px-2 py-4">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+      <h1 className="text-xl font-bold mb-6">Provider Dashboard</h1>
       <Tabs value={tab} onValueChange={setTab} className="w-full">
         <TabsList className="mb-4 w-full grid grid-cols-2 sm:grid-cols-4">
           <TabsTrigger value="offers"><ArrowRight className="mr-1 w-4 h-4" /> My Offers</TabsTrigger>
@@ -219,12 +284,10 @@ export default function ProviderDashboard() {
         </TabsList>
 
         <TabsContent value="offers">
-          <MyOffersList
-            offers={offers}
-            cancelOffer={cancelOffer}
-            formatTimeRemaining={formatTimeRemaining}
-            STATUS_COLORS={STATUS_COLORS}
-          />
+          <div>
+            <h2 className="text-lg font-semibold mb-3">Tasks available</h2>
+            {renderTaskFeed()}
+          </div>
         </TabsContent>
 
         <TabsContent value="accepted">
