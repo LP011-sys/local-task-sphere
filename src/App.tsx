@@ -16,6 +16,17 @@ import AdminAnalyticsPage from "@/pages/admin/AdminAnalyticsPage";
 import AdminPushPage from "@/pages/admin/AdminPushPage";
 import PremiumPackages from "./pages/PremiumPackages";
 import AuthPage from "@/pages/AuthPage";
+import AppLayout from "@/layout/AppLayout";
+import RequireAuth from "@/components/RequireAuth";
+
+// Add page imports (below previous ones)
+import TaskCreationWizard from "@/pages/TaskCreationWizard";
+import ProviderDashboard from "@/pages/ProviderDashboard";
+import CustomerOffers from "@/pages/CustomerOffers";
+import Chat from "@/pages/Chat";
+import MyFavorites from "@/pages/MyFavorites";
+import ProfileSettings from "@/pages/ProfileSettings";
+import LeaveReview from "@/pages/LeaveReview";
 
 const queryClient = new QueryClient();
 
@@ -26,12 +37,12 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
+          {/* Authentication and onboarding routes NOT using AppLayout */}
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/auth" element={<AuthPage />} />
-          {/* ADMIN dashboard (protected!) with nested routes */}
+
+          {/* Admin dashboard and nested routes (untouched) */}
           <Route path="/admin" element={<AdminDashboard />}>
-            {/* Default to /admin/users */}
             <Route index element={<Navigate to="users" replace />} />
             <Route path="users" element={<AdminUsersPage />} />
             <Route path="tasks" element={<AdminTasksPage />} />
@@ -39,10 +50,26 @@ const App = () => (
             <Route path="analytics" element={<AdminAnalyticsPage />} />
             <Route path="push" element={<AdminPushPage />} />
           </Route>
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="/premium" element={<PremiumPackages />} />
-          <Route path="/ProfileSettings" element={React.createElement(require("./pages/ProfileSettings").default)} />
-          <Route path="*" element={<NotFound />} />
+
+          {/* All other public/user routes UNDER AppLayout */}
+          <Route element={<AppLayout>
+            <RequireAuth>
+              <React.Fragment />
+            </RequireAuth>
+          </AppLayout>}>
+            {/* Wrapped with RequireAuth and AppLayout */}
+            <Route index element={<Index />} />
+            <Route path="/dashboard" element={<ProviderDashboard />} />
+            <Route path="/post-task" element={<TaskCreationWizard />} />
+            <Route path="/offers" element={<CustomerOffers />} />
+            <Route path="/inbox" element={<Chat />} />
+            <Route path="/favorites" element={<MyFavorites />} />
+            <Route path="/profile" element={<ProfileSettings />} />
+            <Route path="/review" element={<LeaveReview />} />
+            <Route path="/premium" element={<PremiumPackages />} />
+            {/* fallback */}
+            <Route path="*" element={<NotFound />} />
+          </Route>
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
