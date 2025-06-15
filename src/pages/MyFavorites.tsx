@@ -40,10 +40,10 @@ export default function MyFavoritesPage() {
   React.useEffect(() => {
     if (!profile?.id) return;
     setLoading(true);
-    // CORRECT join hint for provider relation
+    // Remove non-existent avatar_url column from join hint!
     supabase
       .from("favorites")
-      .select("id, provider_id, created_at, provider:app_users!favorites_provider_id_fkey(id,name,avatar_url)")
+      .select("id, provider_id, created_at, provider:app_users!favorites_provider_id_fkey(id,name)")
       .eq("customer_id", profile.id)
       .order("created_at", { ascending: false })
       .then(({ data }) => {
@@ -79,9 +79,13 @@ export default function MyFavoritesPage() {
       <h1 className="text-3xl font-bold mb-6">My Favorite Providers</h1>
       <div className="flex flex-col gap-6">
         {favorites.map(fav => (
-          <ProviderCard key={fav.id} provider={fav.provider} onNewTask={() => {
-            navigate(`/task-create?provider_id=${fav.provider.id}`);
-          }} />
+          <ProviderCard
+            key={fav.id}
+            provider={fav.provider}
+            onNewTask={() => {
+              navigate(`/task-create?provider_id=${fav.provider.id}`);
+            }}
+          />
         ))}
       </div>
     </div>
@@ -119,17 +123,10 @@ function ProviderCard({
   return (
     <Card className="flex items-center gap-4 p-5">
       <div className="flex-shrink-0">
-        {provider.avatar_url ? (
-          <img
-            src={provider.avatar_url}
-            alt={provider.name || "Provider"}
-            className="w-14 h-14 rounded-full object-cover"
-          />
-        ) : (
-          <div className="w-14 h-14 rounded-full bg-gray-200 flex items-center justify-center text-2xl">
-            {provider.name?.[0]?.toUpperCase() || "P"}
-          </div>
-        )}
+        {/* No avatar_url from backend, always use fallback */}
+        <div className="w-14 h-14 rounded-full bg-gray-200 flex items-center justify-center text-2xl">
+          {provider.name?.[0]?.toUpperCase() || "P"}
+        </div>
       </div>
       <div className="flex-1 min-w-0">
         <div className="font-bold text-lg truncate">{provider.name || "(No Name)"}</div>
