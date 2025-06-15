@@ -2,7 +2,7 @@
 import React from "react";
 import { Loader2 } from "lucide-react";
 import { Table, TableHeader, TableRow, TableHead, TableCell, TableBody } from "@/components/ui/table";
-import { useFavorites } from "../Index";
+import { useFavorites } from "@/hooks/useFavorites";
 
 export default function CustomerFavoritesTable() {
   const { data, isLoading, error } = useFavorites();

@@ -2,7 +2,7 @@
 import React from "react";
 import { Loader2 } from "lucide-react";
 import { Table, TableHeader, TableRow, TableHead, TableCell, TableBody } from "@/components/ui/table";
-import { useOffers } from "../Index";
+import { useOffers } from "@/hooks/useOffers";
 
 export default function CustomerOffersTable() {
   const { data, isLoading, error } = useOffers();

@@ -2,7 +2,7 @@
 import React from "react";
 import { Loader2 } from "lucide-react";
 import { Table, TableHeader, TableRow, TableHead, TableCell, TableBody } from "@/components/ui/table";
-import { useTasks } from "../Index";
+import { useTasks } from "@/hooks/useTasks";
 
 export default function CustomerTasksTable() {
   const { data, isLoading, error } = useTasks();
