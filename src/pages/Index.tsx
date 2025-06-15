@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -87,7 +86,7 @@ export default function Index() {
             </a>
           )}
         </header>
-        {/* Hero section */}
+        {/* Hero section always visible */}
         <section className="flex flex-col md:flex-row items-center justify-between gap-10 p-8 max-w-7xl w-full mx-auto">
           <div className="flex flex-col gap-4 max-w-xl md:text-left text-center items-start md:items-start">
             <h1 className="text-5xl font-extrabold text-primary drop-shadow mb-3">Find the right person for your task, fast.</h1>
@@ -96,17 +95,9 @@ export default function Index() {
               Instantly find help, make offers, and collaborate in your local area.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 mt-3">
-              <a href="/post-task">
-                <Button size="lg" className="text-base">Post a Task</Button>
-              </a>
-              <a href="#tasks">
-                <Button variant="outline" size="lg" className="text-base">Browse Tasks</Button>
-              </a>
-              {authed && (
-                <a href="/dashboard">
-                  <Button variant="secondary" size="lg" className="text-base">View My Dashboard</Button>
-                </a>
-              )}
+              <a href="/post-task"><Button size="lg" className="text-base">Post a Task</Button></a>
+              <a href="#tasks"><Button variant="outline" size="lg" className="text-base">Browse Tasks</Button></a>
+              {authed && (<a href="/dashboard"><Button variant="secondary" size="lg" className="text-base">View My Dashboard</Button></a>)}
             </div>
           </div>
           <img
@@ -116,6 +107,8 @@ export default function Index() {
             draggable={false}
           />
         </section>
+
+        {/* Main content: always render these sections */}
         <main className="flex-grow w-full max-w-7xl mx-auto px-4 py-5 space-y-16">
           {/* Task Table */}
           <section id="tasks" className="space-y-2">
@@ -142,7 +135,6 @@ export default function Index() {
             </div>
           </section>
         </main>
-        {/* Footer */}
         <footer className="border-t py-4 w-full bg-white/80 text-center text-sm text-muted-foreground">
           &copy; {new Date().getFullYear()} Task Hub. <a href="https://docs.lovable.dev/" className="underline">About this app</a>
         </footer>
@@ -151,6 +143,7 @@ export default function Index() {
   );
 }
 
+// Render tables with built-in fallback UI for loading/error/empty states.
 function CustomerTasksTable() {
   const { data, isLoading, error } = useTasks();
   if (isLoading) {
