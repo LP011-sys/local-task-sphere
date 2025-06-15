@@ -32,39 +32,45 @@ export function useProviderTasks(
   budgetMax: string,
   search: string
 ) {
-  // No generic annotation! Let TypeScript infer
   return useQuery({
     queryKey: ["providerTasks", category, budgetMin, budgetMax, search],
     queryFn: fetchProviderTasks,
     select: (tasks) => {
-      // Filtering (client-side)
       let result = tasks as Task[];
+
+      // Budget filtering optimization
+      const minBudget = Number(budgetMin);
+      const hasValidMin = !isNaN(minBudget) && budgetMin !== "";
+      const maxBudget = Number(budgetMax);
+      const hasValidMax = !isNaN(maxBudget) && budgetMax !== "";
+
       if (category) {
         result = result.filter((task) => task.category === category);
       }
-      if (budgetMin !== "") {
-        result = result.filter((task) => Number(task.budget) >= Number(budgetMin));
+      if (hasValidMin) {
+        result = result.filter((task) => Number(task.budget) >= minBudget);
       }
-      if (budgetMax !== "") {
-        result = result.filter((task) => Number(task.budget) <= Number(budgetMax));
+      if (hasValidMax) {
+        result = result.filter((task) => Number(task.budget) <= maxBudget);
       }
-      if (search.trim() !== "") {
-        const s = search.trim().toLowerCase();
+
+      // Search term optimization
+      const trimmedSearch = search.trim().toLowerCase();
+      if (trimmedSearch !== "") {
         result = result.filter(
           (task) =>
-            (task.title?.toLowerCase().includes(s) ?? false) ||
-            (task.description?.toLowerCase().includes(s) ?? false)
+            (task.title?.toLowerCase().includes(trimmedSearch) ?? false) ||
+            (task.description?.toLowerCase().includes(trimmedSearch) ?? false)
         );
       }
-      // Boosted tasks first (if boost exists)
-      result.sort((a, b) => {
-        if (a.boost === b.boost) return 0;
-        if (a.boost === "24h") return -1;
-        if (b.boost === "24h") return 1;
-        if (a.boost === "8h") return -1;
-        if (b.boost === "8h") return 1;
-        return 0;
-      });
+
+      // Boost sorting optimization
+      const boostRank: Record<string, number> = { "24h": 2, "8h": 1, none: 0 };
+      result.sort(
+        (a, b) =>
+          (boostRank[b.boost ?? "none"] ?? 0) - (boostRank[a.boost ?? "none"] ?? 0)
+      );
+
       return result;
     },
     staleTime: 120_000,
