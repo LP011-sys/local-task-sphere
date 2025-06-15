@@ -9,6 +9,60 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      app_users: {
+        Row: {
+          auth_user_id: string
+          completed_tasks: number | null
+          created_at: string | null
+          email: string
+          id: string
+          location: unknown | null
+          name: string
+          phone: string | null
+          preferred_language: string
+          profile_photo: string | null
+          rating: number | null
+          role: Database["public"]["Enums"]["user_role"]
+          subscription_plan: string | null
+          updated_at: string | null
+          verification_status: string | null
+        }
+        Insert: {
+          auth_user_id: string
+          completed_tasks?: number | null
+          created_at?: string | null
+          email: string
+          id?: string
+          location?: unknown | null
+          name: string
+          phone?: string | null
+          preferred_language?: string
+          profile_photo?: string | null
+          rating?: number | null
+          role: Database["public"]["Enums"]["user_role"]
+          subscription_plan?: string | null
+          updated_at?: string | null
+          verification_status?: string | null
+        }
+        Update: {
+          auth_user_id?: string
+          completed_tasks?: number | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          location?: unknown | null
+          name?: string
+          phone?: string | null
+          preferred_language?: string
+          profile_photo?: string | null
+          rating?: number | null
+          role?: Database["public"]["Enums"]["user_role"]
+          subscription_plan?: string | null
+          updated_at?: string | null
+          verification_status?: string | null
+        }
+        Relationships: []
+      }
       spatial_ref_sys: {
         Row: {
           auth_name: string | null
@@ -1834,7 +1888,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "customer" | "provider" | "admin"
     }
     CompositeTypes: {
       geometry_dump: {
@@ -1957,6 +2011,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["customer", "provider", "admin"],
+    },
   },
 } as const
