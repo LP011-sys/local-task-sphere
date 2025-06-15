@@ -1,3 +1,4 @@
+
 import React from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
@@ -40,10 +41,12 @@ export default function MyFavoritesPage() {
   React.useEffect(() => {
     if (!profile?.id) return;
     setLoading(true);
-    // Use correct provider join hint for select
+    // Use explicit join hint for provider relation
     supabase
       .from("favorites")
-      .select("id, provider_id, created_at, provider:provider_id(id, name, avatar_url)")
+      .select(
+        "id, provider_id, created_at, provider:provider_id!app_users(id, name, avatar_url)"
+      )
       .eq("customer_id", profile.id)
       .order("created_at", { ascending: false })
       .then(({ data }) => {
