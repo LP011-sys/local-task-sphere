@@ -9,15 +9,6 @@ function sum(arr: any[], field: string) {
   return arr.reduce((acc, x) => acc + (Number(x[field]) || 0), 0);
 }
 
-function groupBy(arr: any[], field: string) {
-  const map: any = {};
-  for (const x of arr) {
-    const key = x[field] ?? "unknown";
-    map[key] = (map[key] || 0) + (Number(x.amount_platform_fee) || 0);
-  }
-  return map;
-}
-
 export default function AdminRevenueOverview() {
   const { data: payments, isLoading, isError } = useQuery({
     queryKey: ["admin-all-payments"],
@@ -35,18 +26,7 @@ export default function AdminRevenueOverview() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("app_users")
-        .select("id, email, username, subscription_plan, role");
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  const { data: tasks } = useQuery({
-    queryKey: ["admin-all-tasks"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("Tasks")
-        .select("id, customer_id, provider_id");
+        .select("id, email, name, subscription_plan, role");
       if (error) throw error;
       return data || [];
     },
@@ -164,3 +144,4 @@ export default function AdminRevenueOverview() {
     </div>
   );
 }
+
