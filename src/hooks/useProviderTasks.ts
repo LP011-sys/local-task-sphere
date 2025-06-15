@@ -7,8 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
  * @param userId The provider's user ID (string or undefined)
  */
 export function useProviderTasks(userId: string | undefined) {
-  // Avoids TypeScript deep recursion by using any[]
-  return useQuery<any[]>({
+  // Avoids TypeScript deep recursion by explicitly using any type
+  return useQuery<any>({
     queryKey: ["provider-tasks", userId ?? "anon"],
     queryFn: async () => {
       if (!userId) return [];
@@ -24,4 +24,3 @@ export function useProviderTasks(userId: string | undefined) {
     refetchInterval: 3000,
   });
 }
-

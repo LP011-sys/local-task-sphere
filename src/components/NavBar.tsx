@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import LanguagePicker from "./LanguagePicker";
@@ -69,9 +68,13 @@ const menuConfig: Record<Role, { key: string; labelKey: TranslationKey; icon: Re
     { key: "category-manager", labelKey: "categoryManager", icon: <FolderPlus size={20} /> },
   ]
 };
+import NotificationBell from "./NotificationBell";
 
 export default function NavBar({ role, activeTab, onTabChange, onRoleChange }: NavBarProps) {
   const { t } = useI18n();
+  // You should get the current user's ID, here it's left as undefined for demo. Replace with real user logic as needed.
+  const userId = undefined; // TODO: Replace with real user ID from context or auth
+
   return (
     <header className="sticky top-0 z-30 bg-white/90 backdrop-blur shadow-sm border-b">
       <div className="flex items-center justify-between gap-4 px-4 py-3 max-w-7xl mx-auto">
@@ -91,6 +94,7 @@ export default function NavBar({ role, activeTab, onTabChange, onRoleChange }: N
           </nav>
         </div>
         <div className="flex items-center gap-3">
+          <NotificationBell userId={userId} />
           <div className="hidden md:flex gap-2">
             <LanguagePicker />
           </div>
@@ -124,4 +128,3 @@ export default function NavBar({ role, activeTab, onTabChange, onRoleChange }: N
     </header>
   );
 }
-
