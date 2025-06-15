@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Star, ArrowRight, Repeat2, Wallet, Calendar, Coins } from "lucide-react";
 import { format } from "date-fns";
+import { useTaskStatusMutation } from "@/hooks/useTaskStatusMutation";
 
 // --------- MOCK DATA ---------
 const MOCK_OFFERS = [
@@ -117,31 +118,43 @@ export default function ProviderDashboard() {
   const [accepted, setAccepted] = useState(MOCK_ACCEPTED_TASKS);
   const [completed, setCompleted] = useState(MOCK_COMPLETED_TASKS);
 
-  // For Accepted Tasks
-  function updateTaskStatus(id: string, next: "In Progress" | "Completed") {
-    setAccepted(acc =>
-      acc.map(t =>
-        t.id === id ? { ...t, status: next } : t
-      )
-    );
-    if (next === "Completed") {
-      const found = accepted.find(t => t.id === id);
-      if (found) {
-        setCompleted(comp => [
-          {
-            id: found.id,
-            title: found.title,
-            net: 24, // Mock net value
-            rating: 5, // Mock rating
-            completed: new Date().toISOString(),
-            customer: "Rebookable Customer",
-          },
-          ...comp,
-        ]);
-        toast({ title: "Task marked as completed!", description: "Awaiting customer confirmation." });
+  const taskStatusMutation = useTaskStatusMutation();
+
+  // For Accepted Tasks: now trigger mutation for status
+  async function updateTaskStatus(id: string, next: "in_progress" | "done" | "completed") {
+    try {
+      await taskStatusMutation.mutateAsync({ taskId: id, status: next });
+      setAccepted(acc =>
+        acc.map(t =>
+          t.id === id ? { ...t, status: next } : t
+        )
+      );
+      if (next === "completed") {
+        const found = accepted.find(t => t.id === id);
+        if (found) {
+          setCompleted(comp => [
+            {
+              id: found.id,
+              title: found.title,
+              net: 24, // Mock net value
+              rating: 5, // Mock rating
+              completed: new Date().toISOString(),
+              customer: "Rebookable Customer",
+            },
+            ...comp,
+          ]);
+          toast({ title: "Task marked as completed!", description: "Awaiting customer confirmation." });
+        }
+      } else if (next === "done") {
+        toast({ title: "Marked as done!", description: "Waiting for customer confirmation." });
+      } else if (next === "in_progress") {
+        toast({ title: "Task started." });
       }
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   }
+
   // For My Offers
   function cancelOffer(id: string) {
     setOffers(offers =>
@@ -160,6 +173,23 @@ export default function ProviderDashboard() {
     // You would fetch the payment object from useTaskPayments and show .status
     // For demo, randomly determine "Prepaid" or "Pending Payment"
     return Math.random() > 0.5 ? "Prepaid" : "Pending Payment";
+  }
+
+  function statusBadge(status: string) {
+    switch (status) {
+      case "open":
+        return <Badge className="bg-gray-100 text-gray-900">Open</Badge>;
+      case "in_progress":
+        return <Badge className="bg-yellow-200 text-yellow-900">In Progress</Badge>;
+      case "done":
+        return <Badge className="bg-blue-100 text-blue-900">Marked Done</Badge>;
+      case "completed":
+        return <Badge className="bg-green-100 text-green-800">Completed</Badge>;
+      case "cancelled":
+        return <Badge className="bg-red-100 text-red-800">Cancelled</Badge>;
+      default:
+        return null;
+    }
   }
 
   return (
@@ -222,12 +252,7 @@ export default function ProviderDashboard() {
                     <span>
                       Deadline: {formatDate(task.deadline)}
                     </span>
-                    <span
-                      className={`px-2 py-0.5 rounded text-xs font-semibold ${STATUS_COLORS[task.status]}`}
-                    >
-                      {task.status}
-                    </span>
-                    {/* Payment status for provider */}
+                    {statusBadge(task.status)}
                     <span className={`ml-2 text-xs px-2 py-0.5 rounded font-semibold ${
                       getPaymentStatus(task.id) === "Prepaid"
                         ? "bg-green-100 text-green-700"
@@ -242,17 +267,19 @@ export default function ProviderDashboard() {
                   {task.status === "Not Started" && (
                     <Button
                       size="sm"
-                      onClick={() => updateTaskStatus(task.id, "In Progress")}
+                      onClick={() => updateTaskStatus(task.id, "in_progress")}
+                      disabled={taskStatusMutation.isPending}
                     >
                       Mark as Started
                     </Button>
                   )}
-                  {task.status === "In Progress" && (
+                  {task.status === "in_progress" && (
                     <Button
                       size="sm"
-                      onClick={() => updateTaskStatus(task.id, "Completed")}
+                      onClick={() => updateTaskStatus(task.id, "done")}
+                      disabled={taskStatusMutation.isPending}
                     >
-                      Mark as Completed
+                      Mark as Done
                     </Button>
                   )}
                 </div>

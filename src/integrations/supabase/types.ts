@@ -307,6 +307,7 @@ export type Database = {
           offer: string | null
           price: string | null
           recurring: boolean | null
+          status: string | null
           suggested_price: string | null
           type: string
           user_id: string
@@ -324,6 +325,7 @@ export type Database = {
           offer?: string | null
           price?: string | null
           recurring?: boolean | null
+          status?: string | null
           suggested_price?: string | null
           type: string
           user_id: string
@@ -341,6 +343,7 @@ export type Database = {
           offer?: string | null
           price?: string | null
           recurring?: boolean | null
+          status?: string | null
           suggested_price?: string | null
           type?: string
           user_id?: string

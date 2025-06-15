@@ -1,26 +1,25 @@
 
+// This hook now fetches all open tasks for providers to browse, not just tasks by a specific provider.
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Fetches all tasks assigned to a provider by userId.
- * @param userId The provider's user ID (string or undefined)
+ * Fetches provider-viewable tasks (status "open", or optionally filter).
+ * @param opts Optional: { userId, status }
  */
-export function useProviderTasks(userId: string | undefined) {
+export function useProviderTasks(userId?: string, status: string = "open") {
   return useQuery({
-    queryKey: ["provider-tasks", userId ?? "anon"],
+    queryKey: ["provider-tasks", { status }],
     queryFn: async () => {
-      if (!userId) return [];
       const { data, error } = await supabase
         .from("Tasks")
         .select("*")
-        .eq("provider_id", userId)
+        .eq("status", status)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
     },
-    enabled: !!userId,
     refetchInterval: 3000,
   });
 }
-
