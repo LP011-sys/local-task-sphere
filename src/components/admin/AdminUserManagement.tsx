@@ -4,16 +4,17 @@ import { TableHeader, TableHead, TableRow, TableCell, TableBody } from "@/compon
 import { AdminTable } from "./AdminTable";
 import { Button } from "@/components/ui/button";
 import { mockUsers } from "@/mocks/mockUsers";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Users, UserX, ShieldCheck } from "lucide-react";
 
 export default function AdminUserManagement() {
   const [role, setRole] = useState<"all"|"customer"|"provider"|"admin">("all");
   const users = role==="all" ? mockUsers : mockUsers.filter(u=>u.role===role);
+  // Each empty state has its own icon
   const emptyStates: Record<string, {msg: string, icon?: React.ReactNode}> = {
-    all: { msg: "No users found. Invite your first user to get started!", icon: <UserPlus size={40} className="text-green-400" /> },
-    customer: { msg: "No customers found. As they sign up, they'll show here." },
-    provider: { msg: "No providers found. As they sign up, they'll show here." },
-    admin: { msg: "No admins found. Invite an administrator to manage the platform." },
+    all: { msg: "No users found. Invite your first user to get started!", icon: <Users size={40} className="text-green-400" /> },
+    customer: { msg: "No customers found. As they sign up, they'll show here.", icon: <UserPlus size={40} className="text-blue-400" /> },
+    provider: { msg: "No providers found. As they sign up, they'll show here.", icon: <ShieldCheck size={40} className="text-yellow-400" /> },
+    admin: { msg: "No admins found. Invite an administrator to manage the platform.", icon: <UserX size={40} className="text-red-400" /> },
   };
   return (
     <div>
@@ -69,4 +70,3 @@ export default function AdminUserManagement() {
     </div>
   );
 }
-

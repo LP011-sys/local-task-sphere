@@ -4,15 +4,20 @@ import { TableHeader, TableHead, TableRow, TableCell, TableBody } from "@/compon
 import { AdminTable } from "./AdminTable";
 import { Button } from "@/components/ui/button";
 import { mockReports } from "@/mocks/mockReports";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Info, Flag } from "lucide-react";
 
 export default function AdminReportsDisputes() {
   const emptyMsg = "No reports or disputes yet—you're all clear!";
+  // Show unique icon for empty state (alert for reports/disputes)
   return (
     <div>
       <AdminTable
         emptyMessage={!mockReports.length ? emptyMsg : undefined}
-        emptyIcon={!mockReports.length ? <AlertCircle size={40} className="text-blue-400" /> : undefined}
+        emptyIcon={
+          !mockReports.length
+            ? <Flag size={40} className="text-purple-400" />
+            : undefined
+        }
       >
         <TableHeader>
           <TableRow>
@@ -47,4 +52,3 @@ export default function AdminReportsDisputes() {
     </div>
   );
 }
-
