@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import RoleSelector, { roles } from "@/components/RoleSelector";
 import NavBar from "@/components/NavBar";
@@ -141,7 +142,8 @@ function AdminBroadcasts() { const { t } = useI18n(); return <Section title={t("
 function AdminCategoryManager() { const { t } = useI18n(); return <Section title={t("categoryManager")} description="Manage service categories." />; }
 
 // ----------- GENERIC PAGE SECTION -----------
-function Section({ title, description }: { title: string; description?: string }) {
+// Change description?: string to description?: React.ReactNode
+function Section({ title, description }: { title: string; description?: React.ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center h-[320px] gap-4 animate-fade-in">
       <h2 className="text-3xl font-bold text-primary">{title}</h2>
