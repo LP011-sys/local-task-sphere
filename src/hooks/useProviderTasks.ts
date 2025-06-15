@@ -11,33 +11,15 @@ const BOOST_ORDER = {
   undefined: 2,
 };
 
-// Explicitly typed outside the hook
-async function fetchProviderTasks(
-  category: string,
-  budgetMin: string,
-  budgetMax: string,
-  search: string
-): Promise<any[]> {
-  let query = supabase
+// Get all open tasks from supabase and filter on the client
+async function fetchOpenTasks(): Promise<any[]> {
+  const { data, error } = await supabase
     .from("Tasks")
     .select("*")
     .eq("status", "open");
 
-  if (category) query = query.eq("category", category);
-  if (budgetMin !== "") query = query.gte("price", budgetMin);
-  if (budgetMax !== "") query = query.lte("price", budgetMax);
-  if (search.trim() !== "") {
-    query = query.or(`offer.ilike.%${search.trim()}%,description.ilike.%${search.trim()}%`);
-  }
-  const { data, error } = await query;
   if (error) throw error;
-  const result = data as any[];
-  result.sort(
-    (a, b) =>
-      (BOOST_ORDER[a.boost_status as keyof typeof BOOST_ORDER] ?? 2) -
-      (BOOST_ORDER[b.boost_status as keyof typeof BOOST_ORDER] ?? 2)
-  );
-  return result;
+  return data as any[];
 }
 
 export function useProviderTasks(
@@ -48,8 +30,36 @@ export function useProviderTasks(
 ) {
   return useQuery({
     queryKey: ["providerFeedTasks", category, budgetMin, budgetMax, search],
-    // Now reference the external, typed fetcher:
-    queryFn: () => fetchProviderTasks(category, budgetMin, budgetMax, search),
+    queryFn: async () => {
+      let tasks = await fetchOpenTasks();
+
+      // Client-side filtering
+      if (category) {
+        tasks = tasks.filter((task: any) => task.category === category);
+      }
+      if (budgetMin !== "") {
+        tasks = tasks.filter((task: any) => Number(task.price) >= Number(budgetMin));
+      }
+      if (budgetMax !== "") {
+        tasks = tasks.filter((task: any) => Number(task.price) <= Number(budgetMax));
+      }
+      if (search.trim() !== "") {
+        const s = search.trim().toLowerCase();
+        tasks = tasks.filter(
+          (task: any) =>
+            (task.offer?.toLowerCase().includes(s) ?? false) ||
+            (task.description?.toLowerCase().includes(s) ?? false)
+        );
+      }
+
+      // Sort by boost_status
+      tasks.sort(
+        (a: any, b: any) =>
+          (BOOST_ORDER[a.boost_status as keyof typeof BOOST_ORDER] ?? 2) -
+          (BOOST_ORDER[b.boost_status as keyof typeof BOOST_ORDER] ?? 2)
+      );
+      return tasks;
+    },
     staleTime: 120_000,
   });
 }
