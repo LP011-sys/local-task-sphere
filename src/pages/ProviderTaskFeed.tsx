@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
@@ -70,26 +69,25 @@ export default function ProviderTaskFeed() {
       // Filter by category
       if (category) query = query.eq("category", category);
       // Filter by budget min (numeric)
-      if (budgetMin !== "") query = query.gte("budget", Number(budgetMin));
-      if (budgetMax !== "") query = query.lte("budget", Number(budgetMax));
-      // Filter by search (title/description)
+      if (budgetMin !== "") query = query.gte("price", budgetMin);
+      if (budgetMax !== "") query = query.lte("price", budgetMax);
+      // Filter by search (offer/description)
       if (search.trim() !== "") {
-        query = query.or(`title.ilike.%${search.trim()}%,description.ilike.%${search.trim()}%`);
+        query = query.or(`offer.ilike.%${search.trim()}%,description.ilike.%${search.trim()}%`);
       }
 
       // Fetch
       const { data, error } = await query;
       if (error) throw error;
 
-      // Order by boost: 24h > 8h > none/other
-      data.sort(
-        (a: any, b: any) =>
-          (BOOST_ORDER[a.boost as keyof typeof BOOST_ORDER] ??
-            2) -
-          (BOOST_ORDER[b.boost as keyof typeof BOOST_ORDER] ?? 2)
+      // Order by boost_status: 24h > 8h > none
+      (data as any[]).sort(
+        (a, b) =>
+          (BOOST_ORDER[a.boost_status as keyof typeof BOOST_ORDER] ?? 2) -
+          (BOOST_ORDER[b.boost_status as keyof typeof BOOST_ORDER] ?? 2)
       );
 
-      return data;
+      return data as any[];
     },
     staleTime: 120_000,
   });
@@ -181,14 +179,14 @@ export default function ProviderTaskFeed() {
             // Boost highlighting logic
             let boostStyle = "";
             let boostBadge = null;
-            if (task.boost === "24h") {
+            if (task.boost_status === "24h") {
               boostStyle = "border-2 border-yellow-400";
               boostBadge = (
                 <Badge className="bg-yellow-400 text-yellow-900 flex items-center gap-1 px-2">
                   <Sparkles className="w-4 h-4" /> 24h Boosted
                 </Badge>
               );
-            } else if (task.boost === "8h") {
+            } else if (task.boost_status === "8h") {
               boostStyle = "border-2 border-gray-400";
               boostBadge = (
                 <Badge className="bg-gray-300 text-gray-800 flex items-center gap-1 px-2">
@@ -207,12 +205,12 @@ export default function ProviderTaskFeed() {
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
-                    <span className="text-lg font-semibold">{task.title}</span>
+                    <span className="text-lg font-semibold">{task.offer}</span>
                     {boostBadge}
                   </div>
                   <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mb-1">
                     <span className="flex items-center gap-1">
-                      <BadgeEuro className="w-4 h-4" /> €{task.budget}
+                      <BadgeEuro className="w-4 h-4" /> €{task.price}
                     </span>
                     <span>{task.category}</span>
                     {task.location && (

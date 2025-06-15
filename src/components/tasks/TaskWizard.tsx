@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -68,19 +67,20 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
       // Prepare Supabase payload
       const payload = {
         user_id: user.id,
-        title: form.title,
         category: form.category,
         description: form.description,
-        location: form.location || null,
-        budget: Number(form.budget),
-        boost: form.boost,
+        location: form.location ? form.location : null,
+        price: String(form.budget),
+        boost_status: form.boost, // Use "boost_status" as defined in table
+        type: "standard", // Required field, use a default value
+        offer: form.title, // Optionally store title as 'offer'
         status: "open",
       };
+
       const { error } = await supabase.from("Tasks").insert([payload]);
       if (error) throw error;
       toast({ title: "Task posted!", description: "Your task is now live." });
       if (onDone) onDone();
-      // Optionally clear form here (not required)
     } catch (e: any) {
       toast({ title: "Failed to post", description: e.message, variant: "destructive" });
     } finally {
