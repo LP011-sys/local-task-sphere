@@ -5,6 +5,8 @@ import LanguagePicker from "./LanguagePicker";
 import { roles } from "./RoleSelector";
 import { User, List, Settings, FileText, Folder, Users, Calendar, MessageSquare, FolderPlus, DollarSign, FilePlus, CircleUserRound } from "lucide-react";
 
+// Make sure to use the translation keys as a type
+type TranslationKey = keyof typeof import("@/contexts/I18nContext").translations["en"];
 type Role = "customer" | "provider" | "admin";
 
 interface NavBarProps {
@@ -14,7 +16,8 @@ interface NavBarProps {
   onRoleChange: (role: Role) => void;
 }
 
-const menuConfig: Record<Role, { key: string; labelKey: string; icon: React.ReactNode }[]> = {
+// Explicitly type menuConfig to use TranslationKey for labelKey
+const menuConfig: Record<Role, { key: string; labelKey: TranslationKey; icon: React.ReactNode }[]> = {
   customer: [
     { key: "dashboard", labelKey: "dashboard", icon: <List size={20}/> },
     { key: "post-task", labelKey: "postTask", icon: <FilePlus size={20}/> },
@@ -74,7 +77,7 @@ export default function NavBar({ role, activeTab, onTabChange, onRoleChange }: N
               value={role}
             >
               {roles.map(r=>(
-                <option key={r.role} value={r.role}>{t(r.role)}</option>
+                <option key={r.role} value={r.role}>{t(r.role as TranslationKey)}</option>
               ))}
             </select>
           </div>
@@ -96,3 +99,4 @@ export default function NavBar({ role, activeTab, onTabChange, onRoleChange }: N
     </header>
   );
 }
+
