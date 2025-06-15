@@ -4,7 +4,7 @@ import { TableHeader, TableHead, TableRow, TableCell, TableBody } from "@/compon
 import { AdminTable } from "./AdminTable";
 import { Button } from "@/components/ui/button";
 import { mockTasks } from "@/mocks/mockTasks";
-import { ClipboardList, ListTodo, AlertCircle } from "lucide-react";
+import { ClipboardList, ListTodo, AlertCircle, Eye, Trash2, Pencil, Flag } from "lucide-react";
 
 export default function AdminTaskOversight() {
   const [filter, setFilter] = useState<"all"|"active"|"flagged">("all");
@@ -31,40 +31,44 @@ export default function AdminTaskOversight() {
           <option value="flagged">Flagged</option>
         </select>
       </div>
-      <AdminTable
-        emptyMessage={!tasks.length ? emptyStates[filter].msg : undefined}
-        emptyIcon={!tasks.length ? emptyStates[filter].icon : undefined}
-      >
-        <TableHeader>
-          <TableRow>
-            <TableHead>Title</TableHead>
-            <TableHead>Poster</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Category</TableHead>
-            <TableHead>Risk</TableHead>
-            <TableHead>Action</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {tasks.map(task=>(
-            <TableRow key={task.id}>
-              <TableCell>{task.title}</TableCell>
-              <TableCell>{task.poster}</TableCell>
-              <TableCell>{task.status}</TableCell>
-              <TableCell>{task.category}</TableCell>
-              <TableCell>{task.risk}</TableCell>
-              <TableCell>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline">View</Button>
-                  <Button size="sm" variant="destructive">Remove</Button>
-                  <Button size="sm" variant="default">Edit</Button>
-                  <Button size="sm" variant="secondary">Flag</Button>
-                </div>
-              </TableCell>
+      {/* Mobile scroll wrapper */}
+      <div className="w-full overflow-x-auto">
+        <AdminTable
+          emptyMessage={!tasks.length ? emptyStates[filter].msg : undefined}
+          emptyIcon={!tasks.length ? emptyStates[filter].icon : undefined}
+        >
+          <TableHeader>
+            <TableRow>
+              <TableHead>Title</TableHead>
+              <TableHead>Poster</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Risk</TableHead>
+              <TableHead>Action</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </AdminTable>
+          </TableHeader>
+          <TableBody>
+            {tasks.map(task=>(
+              <TableRow key={task.id}>
+                <TableCell>{task.title}</TableCell>
+                <TableCell>{task.poster}</TableCell>
+                <TableCell>{task.status}</TableCell>
+                <TableCell>{task.category}</TableCell>
+                <TableCell>{task.risk}</TableCell>
+                <TableCell>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button size="sm" variant="outline"><Eye className="mr-1" size={16} /> View</Button>
+                    <Button size="sm" variant="destructive"><Trash2 className="mr-1" size={16} /> Remove</Button>
+                    <Button size="sm" variant="default"><Pencil className="mr-1" size={16} /> Edit</Button>
+                    <Button size="sm" variant="secondary"><Flag className="mr-1" size={16} /> Flag</Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </AdminTable>
+      </div>
     </div>
   );
 }
+

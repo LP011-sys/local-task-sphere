@@ -4,7 +4,7 @@ import { TableHeader, TableHead, TableRow, TableCell, TableBody } from "@/compon
 import { AdminTable } from "./AdminTable";
 import { Button } from "@/components/ui/button";
 import { mockUsers } from "@/mocks/mockUsers";
-import { UserPlus, Users, UserX, ShieldCheck } from "lucide-react";
+import { UserPlus, Users, UserX, ShieldCheck, Eye, ShieldOff, Ban, BadgeCheck } from "lucide-react";
 
 export default function AdminUserManagement() {
   const [role, setRole] = useState<"all"|"customer"|"provider"|"admin">("all");
@@ -31,46 +31,50 @@ export default function AdminUserManagement() {
           <option value="admin">Admin</option>
         </select>
       </div>
-      <AdminTable
-        emptyMessage={!users.length ? emptyStates[role].msg : undefined}
-        emptyIcon={!users.length ? emptyStates[role].icon : undefined}
-      >
-        <TableHeader>
-          <TableRow>
-            <TableHead>User</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Tasks</TableHead>
-            <TableHead>Rating</TableHead>
-            <TableHead>Action</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {users.map(user=>(
-            <TableRow key={user.id}>
-              <TableCell>
-                <div>
-                  <span className="font-medium">{user.name}</span>
-                </div>
-              </TableCell>
-              <TableCell>{user.email}</TableCell>
-              <TableCell className="capitalize">{user.role}</TableCell>
-              <TableCell>{user.status}</TableCell>
-              <TableCell>{user.tasks}</TableCell>
-              <TableCell>{user.rating !== null ? user.rating : "-"}</TableCell>
-              <TableCell>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline">View</Button>
-                  <Button size="sm" variant="destructive">Suspend</Button>
-                  <Button size="sm" variant="secondary">Ban</Button>
-                  <Button size="sm" variant="default">Verify</Button>
-                </div>
-              </TableCell>
+      {/* Mobile scroll wrapper */}
+      <div className="w-full overflow-x-auto">
+        <AdminTable
+          emptyMessage={!users.length ? emptyStates[role].msg : undefined}
+          emptyIcon={!users.length ? emptyStates[role].icon : undefined}
+        >
+          <TableHeader>
+            <TableRow>
+              <TableHead>User</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Tasks</TableHead>
+              <TableHead>Rating</TableHead>
+              <TableHead>Action</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </AdminTable>
+          </TableHeader>
+          <TableBody>
+            {users.map(user=>(
+              <TableRow key={user.id}>
+                <TableCell>
+                  <div>
+                    <span className="font-medium">{user.name}</span>
+                  </div>
+                </TableCell>
+                <TableCell>{user.email}</TableCell>
+                <TableCell className="capitalize">{user.role}</TableCell>
+                <TableCell>{user.status}</TableCell>
+                <TableCell>{user.tasks}</TableCell>
+                <TableCell>{user.rating !== null ? user.rating : "-"}</TableCell>
+                <TableCell>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button size="sm" variant="outline"><Eye className="mr-1" size={16} /> View</Button>
+                    <Button size="sm" variant="destructive"><ShieldOff className="mr-1" size={16} /> Suspend</Button>
+                    <Button size="sm" variant="secondary"><Ban className="mr-1" size={16} /> Ban</Button>
+                    <Button size="sm" variant="default"><BadgeCheck className="mr-1" size={16} /> Verify</Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </AdminTable>
+      </div>
     </div>
   );
 }
+
