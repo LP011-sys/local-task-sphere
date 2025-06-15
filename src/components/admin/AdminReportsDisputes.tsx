@@ -2,10 +2,8 @@
 import React from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-const mockReports = [
-  { id: "r1", type: "User", name: "Bob Lee", reason: "Abusive language", status: "open", notes: "" },
-  { id: "r2", type: "Task", name: "Paint living room", reason: "Spam", status: "open", notes: "" }
-];
+import { mockReports } from "@/mocks/mockReports";
+
 export default function AdminReportsDisputes() {
   return (
     <div>

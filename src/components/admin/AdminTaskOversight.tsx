@@ -2,10 +2,8 @@
 import React, { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-const mockTasks = [
-  { id: "t1", title: "Paint living room", poster: "Alice", status: "active", category: "Painting", flagged: false, risk: "low" },
-  { id: "t2", title: "Fix plumbing leak", poster: "Bob", status: "flagged", category: "Plumbing", flagged: true, risk: "medium" }
-];
+import { mockTasks } from "@/mocks/mockTasks";
+
 export default function AdminTaskOversight() {
   const [filter, setFilter] = useState<"all"|"active"|"flagged">("all");
   const tasks = filter==="all"?mockTasks:mockTasks.filter(t=>filter==="flagged"?t.flagged:t.status===filter);
