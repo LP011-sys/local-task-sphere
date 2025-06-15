@@ -2,10 +2,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-// Fix: avoid deep recursion in query key type
+/**
+ * Fetches all tasks assigned to a provider by userId.
+ * @param userId The provider's user ID (string or undefined)
+ */
 export function useProviderTasks(userId: string | undefined) {
+  // Always pass a static query key to prevent infinite type recursion
   return useQuery({
-    queryKey: userId ? ["provider-tasks", String(userId)] : ["provider-tasks", "anon"],
+    queryKey: ["provider-tasks", userId ?? "anon"],
     queryFn: async () => {
       if (!userId) return [];
       const { data, error } = await supabase
