@@ -1,6 +1,6 @@
 
 import React from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, Outlet } from "react-router-dom";
 
 const navLinks = [
   { path: "/", label: "Home" },
@@ -10,7 +10,7 @@ const navLinks = [
   { path: "/profile", label: "Profile" },
 ];
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default function AppLayout() {
   const location = useLocation();
 
   return (
@@ -36,7 +36,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </nav>
       </header>
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full">{children}</main>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full">
+        <Outlet />
+      </main>
     </div>
   );
 }
