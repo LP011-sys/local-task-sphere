@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -8,7 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { I18nProvider } from "@/contexts/I18nContext";
 import Index from "./pages/Index";
 import NotFound from "@/pages/NotFound";
-import OnboardingPage from "./pages/OnboardingPage";
+import OnboardingPage from "@/pages/OnboardingPage";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminUsersPage from "@/pages/admin/AdminUsersPage";
 import AdminTasksPage from "@/pages/admin/AdminTasksPage";
@@ -43,21 +42,30 @@ const App = () => (
             <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/auth" element={<AuthPage />} />
 
-            {/* Admin dashboard and nested routes - Admin only */}
+            {/* Admin dashboard route - Admin only */}
             <Route path="/admin" element={
               <RequireAuth>
-                <RequireAdmin>
+                <RequireRole allowedRoles={["admin"]}>
                   <AdminDashboard />
-                </RequireAdmin>
+                </RequireRole>
               </RequireAuth>
-            }>
-              <Route index element={<Navigate to="users" replace />} />
-              <Route path="users" element={<AdminUsersPage />} />
-              <Route path="tasks" element={<AdminTasksPage />} />
-              <Route path="reports" element={<AdminReportsPage />} />
-              <Route path="analytics" element={<AdminAnalyticsPage />} />
-              <Route path="push" element={<AdminPushPage />} />
-            </Route>
+            } />
+
+            {/* Admin nested routes - Admin only */}
+            <Route path="/admin/*" element={
+              <RequireAuth>
+                <RequireRole allowedRoles={["admin"]}>
+                  <Routes>
+                    <Route index element={<Navigate to="/admin" replace />} />
+                    <Route path="users" element={<AdminUsersPage />} />
+                    <Route path="tasks" element={<AdminTasksPage />} />
+                    <Route path="reports" element={<AdminReportsPage />} />
+                    <Route path="analytics" element={<AdminAnalyticsPage />} />
+                    <Route path="push" element={<AdminPushPage />} />
+                  </Routes>
+                </RequireRole>
+              </RequireAuth>
+            } />
 
             {/* All other public/user routes UNDER AppLayout */}
             <Route element={<AppLayout />}>
