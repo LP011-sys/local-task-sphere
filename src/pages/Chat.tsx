@@ -8,20 +8,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { Send, MessageCircle, User } from "lucide-react";
 import { ChatMessageBubble } from "@/components/ChatMessageBubble";
 
-type Conversation = {
+type TaskWithMessages = {
   id: string;
-  task_id: string;
-  participants: string[];
+  title: string;
+  status: string;
+  customer_id: string;
   created_at: string;
-  task: {
-    title: string;
-  };
 };
 
 type Message = {
   id: string;
   content: string;
   sender_id: string;
+  receiver_id: string;
+  task_id: string;
   created_at: string;
   sender: {
     name: string;
@@ -29,8 +29,8 @@ type Message = {
 };
 
 export default function Chat() {
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+  const [tasks, setTasks] = useState<TaskWithMessages[]>([]);
+  const [selectedTask, setSelectedTask] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -38,42 +38,40 @@ export default function Chat() {
   const { toast } = useToast();
 
   useEffect(() => {
-    loadConversations();
+    loadTasksWithMessages();
     getCurrentUser();
   }, []);
 
   useEffect(() => {
-    if (selectedConversation) {
-      loadMessages(selectedConversation);
+    if (selectedTask) {
+      loadMessages(selectedTask);
     }
-  }, [selectedConversation]);
+  }, [selectedTask]);
 
   const getCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     setCurrentUserId(user?.id || null);
   };
 
-  const loadConversations = async () => {
+  const loadTasksWithMessages = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) return;
 
-      const { data, error } = await supabase
-        .from("conversations")
-        .select(`
-          *,
-          task:tasks(title)
-        `)
-        .contains("participants", [user.id])
+      // Get tasks where user is involved (as customer or has sent/received messages)
+      const { data: tasksData, error: tasksError } = await supabase
+        .from("Tasks")
+        .select("id, title, status, customer_id, created_at")
+        .or(`customer_id.eq.${user.id}`)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (tasksError) throw tasksError;
 
-      setConversations(data || []);
+      setTasks(tasksData || []);
       
-      if (data && data.length > 0 && !selectedConversation) {
-        setSelectedConversation(data[0].id);
+      if (tasksData && tasksData.length > 0 && !selectedTask) {
+        setSelectedTask(tasksData[0].id);
       }
     } catch (error: any) {
       toast({ 
@@ -86,7 +84,7 @@ export default function Chat() {
     }
   };
 
-  const loadMessages = async (conversationId: string) => {
+  const loadMessages = async (taskId: string) => {
     try {
       const { data, error } = await supabase
         .from("messages")
@@ -94,7 +92,7 @@ export default function Chat() {
           *,
           sender:app_users!messages_sender_id_fkey(name)
         `)
-        .eq("conversation_id", conversationId)
+        .eq("task_id", taskId)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
@@ -112,21 +110,29 @@ export default function Chat() {
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newMessage.trim() || !selectedConversation || !currentUserId) return;
+    if (!newMessage.trim() || !selectedTask || !currentUserId) return;
+
+    // Find the task to get the other participant
+    const task = tasks.find(t => t.id === selectedTask);
+    if (!task) return;
+
+    // For now, assume the receiver is the task customer if current user is not customer
+    const receiverId = task.customer_id === currentUserId ? task.customer_id : task.customer_id;
 
     try {
       const { error } = await supabase
         .from("messages")
         .insert([{
-          conversation_id: selectedConversation,
+          task_id: selectedTask,
           sender_id: currentUserId,
+          receiver_id: receiverId,
           content: newMessage.trim()
         }]);
 
       if (error) throw error;
 
       setNewMessage("");
-      loadMessages(selectedConversation);
+      loadMessages(selectedTask);
     } catch (error: any) {
       toast({ 
         title: "Failed to send message", 
@@ -149,7 +155,7 @@ export default function Chat() {
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
-        {/* Conversations List */}
+        {/* Tasks List */}
         <div className="bg-white rounded-xl shadow-md border overflow-hidden">
           <div className="p-4 border-b">
             <div className="flex items-center gap-2">
@@ -159,28 +165,28 @@ export default function Chat() {
           </div>
           
           <div className="overflow-y-auto">
-            {conversations.length === 0 ? (
+            {tasks.length === 0 ? (
               <div className="p-4 text-center">
                 <p className="text-muted-foreground text-sm">No conversations yet</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Accept an offer to start chatting
+                  Create a task to start chatting
                 </p>
               </div>
             ) : (
-              conversations.map((conversation) => (
+              tasks.map((task) => (
                 <button
-                  key={conversation.id}
-                  onClick={() => setSelectedConversation(conversation.id)}
+                  key={task.id}
+                  onClick={() => setSelectedTask(task.id)}
                   className={`w-full p-4 text-left border-b hover:bg-gray-50 transition ${
-                    selectedConversation === conversation.id ? "bg-blue-50 border-l-4 border-l-primary" : ""
+                    selectedTask === task.id ? "bg-blue-50 border-l-4 border-l-primary" : ""
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <User className="text-gray-400" size={16} />
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{conversation.task?.title}</p>
+                      <p className="font-medium text-sm truncate">{task.title}</p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(conversation.created_at).toLocaleDateString()}
+                        {new Date(task.created_at).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
@@ -192,11 +198,11 @@ export default function Chat() {
 
         {/* Chat Area */}
         <div className="lg:col-span-2 bg-white rounded-xl shadow-md border flex flex-col">
-          {selectedConversation ? (
+          {selectedTask ? (
             <>
               <div className="p-4 border-b">
                 <h3 className="font-medium">
-                  {conversations.find(c => c.id === selectedConversation)?.task?.title}
+                  {tasks.find(t => t.id === selectedTask)?.title}
                 </h3>
               </div>
               

@@ -39,16 +39,25 @@ export default function ProfileSettings() {
       const { data: profileData } = await supabase
         .from("app_users")
         .select("*")
-        .eq("id", user.id)
-        .single();
+        .eq("auth_user_id", user.id)
+        .maybeSingle();
 
       if (profileData) {
         setProfile({
           name: profileData.name || "",
           email: user.email || "",
           phone: profileData.phone || "",
-          location: profileData.location || "",
+          location: typeof profileData.location === 'string' ? profileData.location : "",
           bio: profileData.bio || ""
+        });
+      } else {
+        // Create profile if it doesn't exist
+        setProfile({
+          name: "",
+          email: user.email || "",
+          phone: "",
+          location: "",
+          bio: ""
         });
       }
     } catch (error: any) {
@@ -74,11 +83,13 @@ export default function ProfileSettings() {
       const { error } = await supabase
         .from("app_users")
         .upsert({
-          id: user.id,
+          auth_user_id: user.id,
+          email: user.email || "",
           name: profile.name,
           phone: profile.phone,
           location: profile.location,
-          bio: profile.bio
+          bio: profile.bio,
+          role: "customer" // Default role
         });
 
       if (error) throw error;

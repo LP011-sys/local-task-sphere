@@ -17,10 +17,10 @@ type Offer = {
   task: {
     title: string;
     description: string;
-  };
+  } | null;
   provider: {
     name: string;
-  };
+  } | null;
 };
 
 export default function CustomerOffers() {
@@ -38,19 +38,54 @@ export default function CustomerOffers() {
       
       if (!user) return;
 
+      // First get user's tasks
+      const { data: userTasks, error: tasksError } = await supabase
+        .from("Tasks")
+        .select("id")
+        .eq("customer_id", user.id);
+
+      if (tasksError) throw tasksError;
+
+      if (!userTasks || userTasks.length === 0) {
+        setOffers([]);
+        setLoading(false);
+        return;
+      }
+
+      const taskIds = userTasks.map(task => task.id);
+
+      // Get offers for user's tasks
       const { data, error } = await supabase
         .from("offers")
         .select(`
           *,
-          task:tasks(title, description),
-          provider:app_users!offers_provider_id_fkey(name)
+          Tasks!inner(title, description),
+          app_users!offers_provider_id_fkey(name)
         `)
-        .eq("task.customer_id", user.id)
+        .in("task_id", taskIds)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      setOffers(data || []);
+      // Transform the data to match our type
+      const transformedOffers: Offer[] = (data || []).map(offer => ({
+        id: offer.id,
+        message: offer.message || "",
+        price: typeof offer.price === 'string' ? parseFloat(offer.price) : offer.price,
+        status: offer.status || "pending",
+        created_at: offer.created_at,
+        provider_id: offer.provider_id,
+        task_id: offer.task_id,
+        task: offer.Tasks ? {
+          title: offer.Tasks.title || "",
+          description: offer.Tasks.description || ""
+        } : null,
+        provider: offer.app_users ? {
+          name: offer.app_users.name || "Provider"
+        } : null
+      }));
+
+      setOffers(transformedOffers);
     } catch (error: any) {
       toast({ 
         title: "Failed to load offers", 
@@ -132,7 +167,7 @@ export default function CustomerOffers() {
                     </span>
                   </div>
                   
-                  <h3 className="font-medium mb-2">{offer.task?.title}</h3>
+                  <h3 className="font-medium mb-2">{offer.task?.title || "Task"}</h3>
                   <p className="text-sm text-gray-600 mb-3">{offer.message}</p>
                   
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">

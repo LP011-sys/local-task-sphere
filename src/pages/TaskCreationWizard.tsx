@@ -49,7 +49,7 @@ export default function TaskCreationWizard() {
         return;
       }
 
-      const { error } = await supabase.from("tasks").insert([
+      const { error } = await supabase.from("Tasks").insert([
         {
           title: title.trim(),
           description: description.trim(),
@@ -125,7 +125,7 @@ export default function TaskCreationWizard() {
               <option value="tech">Tech Support</option>
               <option value="other">Other</option>
             </select>
-            {errors.category && <p className="text-xs text-red-500 mt-1">{errors.category}</p>}
+            {errors.category && <p className="text-xs text-red-500 mt-1">{errors.category}}</p>}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
