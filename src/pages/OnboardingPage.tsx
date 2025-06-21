@@ -5,6 +5,7 @@ import { useI18n } from "@/contexts/I18nContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 
 // Helper to update profile role
 async function updateUserRole(role: "customer" | "provider") {
@@ -26,14 +27,14 @@ export default function OnboardingPage() {
   const navigate = useNavigate();
   const { t } = useI18n();
   const [error, setError] = useState<string | null>(null);
+  const { redirectAfterAuth } = useAuthRedirect();
 
   async function handleRoleSelect(role: "customer" | "provider") {
     setSaving(true);
     setError(null);
     try {
       await updateUserRole(role);
-      if (role === "customer") navigate("/TaskCreationWizard");
-      else navigate("/ProviderTaskFeed");
+      await redirectAfterAuth();
     } catch (e: any) {
       setError(e.message || "Could not update your role.");
     } finally {

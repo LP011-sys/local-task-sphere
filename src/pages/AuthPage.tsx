@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 import { FcGoogle } from "react-icons/fc";
 import { SiApple } from "react-icons/si";
 
@@ -16,34 +17,42 @@ export default function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { redirectAfterAuth } = useAuthRedirect();
 
   useEffect(() => {
-    // If user is already logged in, redirect home
+    // If user is already logged in, redirect them
     supabase.auth.getUser().then(({ data }) => {
-      if (data?.user) navigate("/");
+      if (data?.user) {
+        redirectAfterAuth();
+      }
     });
-  }, [navigate]);
+  }, [redirectAfterAuth]);
 
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true); setError(null);
+    setLoading(true); 
+    setError(null);
+    
     if (!email || !password) {
       setError("Please enter email and password.");
       setLoading(false);
       return;
     }
+    
     try {
       if (mode === "login") {
         const { error } = await supabase.auth.signInWithPassword({
           email, password,
         });
+        
         if (error) {
           setError(error.message);
           setLoading(false);
           return;
         }
+        
         toast({ title: "Logged in!", description: "Welcome back 😊" });
-        navigate("/"); // Redirect to home after login
+        await redirectAfterAuth();
         return;
       } else {
         const { error } = await supabase.auth.signUp({
@@ -53,11 +62,13 @@ export default function AuthPage() {
             emailRedirectTo: window.location.origin + "/",
           }
         });
+        
         if (error) {
           setError(error.message);
           setLoading(false);
           return;
         }
+        
         toast({ title: "Check your email!", description: "A confirmation link was sent." });
         // Redirect to onboarding after sign up
         setTimeout(() => navigate("/onboarding", { replace: true }), 1300);
@@ -70,13 +81,16 @@ export default function AuthPage() {
   }
 
   async function handleOAuth(provider: "google" | "apple") {
-    setLoading(true); setError(null);
+    setLoading(true); 
+    setError(null);
+    
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
         redirectTo: window.location.origin + "/onboarding",
       }
     });
+    
     if (error) {
       setError(error.message);
       setLoading(false);
@@ -106,7 +120,9 @@ export default function AuthPage() {
             <label className="block mb-1 font-medium text-sm">Password</label>
             <Input type="password" value={password} onChange={e => setPassword(e.target.value)} />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>{loading ? "Loading..." : mode === "login" ? "Log in" : "Sign up"}</Button>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Loading..." : mode === "login" ? "Log in" : "Sign up"}
+          </Button>
           {error && <div className="text-destructive text-sm text-center mt-2">{error}</div>}
         </form>
 
@@ -149,4 +165,3 @@ export default function AuthPage() {
     </div>
   );
 }
-

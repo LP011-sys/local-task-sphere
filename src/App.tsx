@@ -25,6 +25,9 @@ import Chat from "@/pages/Chat";
 import MyFavorites from "@/pages/MyFavorites";
 import ProfileSettings from "@/pages/ProfileSettings";
 import LeaveReview from "@/pages/LeaveReview";
+import RequireAuth from "@/components/auth/RequireAuth";
+import RequireRole from "@/components/auth/RequireRole";
+import { RequireAdmin } from "@/components/auth/RequireAdmin";
 
 const queryClient = new QueryClient();
 
@@ -40,8 +43,14 @@ const App = () => (
             <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/auth" element={<AuthPage />} />
 
-            {/* Admin dashboard and nested routes */}
-            <Route path="/admin" element={<AdminDashboard />}>
+            {/* Admin dashboard and nested routes - Admin only */}
+            <Route path="/admin" element={
+              <RequireAuth>
+                <RequireAdmin>
+                  <AdminDashboard />
+                </RequireAdmin>
+              </RequireAuth>
+            }>
               <Route index element={<Navigate to="users" replace />} />
               <Route path="users" element={<AdminUsersPage />} />
               <Route path="tasks" element={<AdminTasksPage />} />
@@ -52,15 +61,63 @@ const App = () => (
 
             {/* All other public/user routes UNDER AppLayout */}
             <Route element={<AppLayout />}>
+              {/* Public routes */}
               <Route index element={<Index />} />
-              <Route path="/dashboard" element={<ProviderDashboard />} />
-              <Route path="/post-task" element={<TaskCreationWizard />} />
-              <Route path="/offers" element={<CustomerOffers />} />
-              <Route path="/inbox" element={<Chat />} />
-              <Route path="/favorites" element={<MyFavorites />} />
-              <Route path="/profile" element={<ProfileSettings />} />
-              <Route path="/review" element={<LeaveReview />} />
               <Route path="/premium" element={<PremiumPackages />} />
+              
+              {/* Protected routes that require authentication */}
+              <Route path="/profile" element={
+                <RequireAuth>
+                  <ProfileSettings />
+                </RequireAuth>
+              } />
+              
+              <Route path="/inbox" element={
+                <RequireAuth>
+                  <Chat />
+                </RequireAuth>
+              } />
+              
+              <Route path="/review" element={
+                <RequireAuth>
+                  <LeaveReview />
+                </RequireAuth>
+              } />
+
+              {/* Customer-only routes */}
+              <Route path="/post-task" element={
+                <RequireAuth>
+                  <RequireRole allowedRoles={["customer"]}>
+                    <TaskCreationWizard />
+                  </RequireRole>
+                </RequireAuth>
+              } />
+              
+              <Route path="/offers" element={
+                <RequireAuth>
+                  <RequireRole allowedRoles={["customer"]}>
+                    <CustomerOffers />
+                  </RequireRole>
+                </RequireAuth>
+              } />
+              
+              <Route path="/favorites" element={
+                <RequireAuth>
+                  <RequireRole allowedRoles={["customer"]}>
+                    <MyFavorites />
+                  </RequireRole>
+                </RequireAuth>
+              } />
+
+              {/* Provider-only routes */}
+              <Route path="/dashboard" element={
+                <RequireAuth>
+                  <RequireRole allowedRoles={["provider"]}>
+                    <ProviderDashboard />
+                  </RequireRole>
+                </RequireAuth>
+              } />
+
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
