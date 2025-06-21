@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { translateText, detectLanguage } from "@/utils/translateMessage";
 
 export type Message = {
   id: string;
@@ -9,6 +10,10 @@ export type Message = {
   sender_id: string;
   receiver_id: string;
   content: string;
+  original_text?: string;
+  translated_text?: string;
+  translated_to?: string;
+  source_language?: string;
   created_at: string;
 };
 
@@ -68,10 +73,36 @@ export function useSendMessage() {
       sender_id,
       receiver_id,
       content,
-    }: Omit<Message, "id" | "created_at">) => {
+      senderLanguage,
+      receiverLanguage,
+    }: Omit<Message, "id" | "created_at"> & {
+      senderLanguage?: string;
+      receiverLanguage?: string;
+    }) => {
+      const detectedLanguage = detectLanguage(content);
+      const sourceLanguage = senderLanguage || detectedLanguage;
+      
+      let translatedText = content;
+      let translatedTo = null;
+      
+      // Translate if languages are different
+      if (receiverLanguage && sourceLanguage !== receiverLanguage) {
+        translatedText = await translateText(content, receiverLanguage, sourceLanguage);
+        translatedTo = receiverLanguage;
+      }
+
       const { data, error } = await supabase
         .from("messages")
-        .insert([{ task_id, sender_id, receiver_id, content }]);
+        .insert([{ 
+          task_id, 
+          sender_id, 
+          receiver_id, 
+          content: translatedTo ? translatedText : content,
+          original_text: content,
+          translated_text: translatedTo ? translatedText : null,
+          translated_to: translatedTo,
+          source_language: sourceLanguage
+        }]);
       if (error) throw error;
       return data;
     },

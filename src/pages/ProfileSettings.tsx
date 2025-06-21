@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
@@ -8,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Mail, Phone, MapPin, LogOut } from "lucide-react";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 export default function ProfileSettings() {
   const [profile, setProfile] = useState({
@@ -15,7 +15,8 @@ export default function ProfileSettings() {
     email: "",
     phone: "",
     location: "",
-    bio: ""
+    bio: "",
+    preferred_language: "en"
   });
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -48,7 +49,8 @@ export default function ProfileSettings() {
           email: user.email || "",
           phone: profileData.phone || "",
           location: typeof profileData.location === 'string' ? profileData.location : "",
-          bio: profileData.bio || ""
+          bio: profileData.bio || "",
+          preferred_language: profileData.preferred_language || "en"
         });
       } else {
         // Create profile if it doesn't exist
@@ -57,7 +59,8 @@ export default function ProfileSettings() {
           email: user.email || "",
           phone: "",
           location: "",
-          bio: ""
+          bio: "",
+          preferred_language: "en"
         });
       }
     } catch (error: any) {
@@ -89,6 +92,7 @@ export default function ProfileSettings() {
           phone: profile.phone,
           location: profile.location,
           bio: profile.bio,
+          preferred_language: profile.preferred_language,
           role: "customer" // Default role
         });
 
@@ -181,6 +185,12 @@ export default function ProfileSettings() {
               />
             </div>
           </div>
+
+          <LanguageSelector
+            value={profile.preferred_language}
+            onChange={(value) => setProfile({ ...profile, preferred_language: value })}
+            label="Preferred Language"
+          />
 
           <div>
             <Label className="text-sm font-medium text-gray-700">Bio</Label>

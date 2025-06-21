@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,8 +6,10 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Send, MessageCircle, User } from "lucide-react";
 import { ChatMessageBubble } from "@/components/ChatMessageBubble";
+import { TranslationToggle } from "@/components/TranslationToggle";
 import { NotificationBadge } from "@/components/ui/notification-badge";
 import { useChatMessages, useSendMessage } from "@/hooks/useChatMessages";
+import { useCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
 
 type TaskWithMessages = {
   id: string;
@@ -25,11 +26,15 @@ export default function Chat() {
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+  const [translationEnabled, setTranslationEnabled] = useState(true);
   const { toast } = useToast();
 
   // Use the real-time chat messages hook
   const { data: messages = [], isLoading: messagesLoading } = useChatMessages(selectedTask);
   const sendMessageMutation = useSendMessage();
+  
+  // Get current user profile for language preferences
+  const { data: currentUserProfile } = useCurrentUserProfile(currentUserId);
 
   useEffect(() => {
     loadTasksWithMessages();
@@ -81,15 +86,25 @@ export default function Chat() {
     const task = tasks.find(t => t.id === selectedTask);
     if (!task) return;
 
-    // For now, assume the receiver is the task user if current user is not task user
+    // Get receiver's profile for language preference
+    const { data: receiverProfile } = await supabase
+      .from("app_users")
+      .select("preferred_language")
+      .eq("id", task.user_id === currentUserId ? task.user_id : task.user_id)
+      .single();
+
     const receiverId = task.user_id === currentUserId ? task.user_id : task.user_id;
+    const senderLanguage = currentUserProfile?.preferred_language || 'en';
+    const receiverLanguage = receiverProfile?.preferred_language || 'en';
 
     try {
       await sendMessageMutation.mutateAsync({
         task_id: selectedTask,
         sender_id: currentUserId,
         receiver_id: receiverId,
-        content: newMessage.trim()
+        content: newMessage.trim(),
+        senderLanguage: translationEnabled ? senderLanguage : undefined,
+        receiverLanguage: translationEnabled ? receiverLanguage : undefined,
       });
 
       setNewMessage("");
@@ -101,6 +116,10 @@ export default function Chat() {
       });
     }
   };
+
+  // Check if current user and receiver have different languages
+  const selectedTaskData = tasks.find(t => t.id === selectedTask);
+  const showTranslationOptions = selectedTaskData && currentUserProfile?.preferred_language !== 'en'; // Simplified check
 
   if (loading) {
     return (
@@ -166,6 +185,11 @@ export default function Chat() {
                 <h3 className="font-medium">
                   {tasks.find(t => t.id === selectedTask)?.description.substring(0, 100)}...
                 </h3>
+                <TranslationToggle
+                  enabled={translationEnabled}
+                  onToggle={setTranslationEnabled}
+                  showDifferentLanguages={showTranslationOptions}
+                />
               </div>
               
               <div className="flex-1 overflow-y-auto p-4 space-y-2">
@@ -177,8 +201,12 @@ export default function Chat() {
                       key={message.id}
                       content={message.content}
                       isOwn={message.sender_id === currentUserId}
-                      senderName="User" // You might want to fetch sender names
+                      senderName="User"
                       createdAt={message.created_at}
+                      originalText={message.original_text}
+                      translatedText={message.translated_text}
+                      translatedTo={message.translated_to}
+                      sourceLanguage={message.source_language}
                     />
                   ))
                 )}
