@@ -1,237 +1,221 @@
 
-import React, { useRef } from "react";
-import { useForm } from "react-hook-form";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useCurrentUserProfile, useUpdateCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { User, Mail, Phone, MapPin, LogOut } from "lucide-react";
 
-// Supported languages
-const LANGUAGES = [
-  { label: "English", value: "en" },
-  { label: "Serbian", value: "sr" },
-  { label: "Spanish", value: "es" },
-  // Add more as needed
-];
-
-type NotificationPreferences = {
-  email_notifications?: boolean
-};
-
-type FormValues = {
-  name: string,
-  email: string,
-  bio: string,
-  language: string,
-  notification_preferences: NotificationPreferences,
-  profile_photo?: FileList
-};
-
-function coerceNotificationPref(dbValue: any): NotificationPreferences {
-  if (
-    dbValue &&
-    typeof dbValue === "object" &&
-    !Array.isArray(dbValue)
-  ) {
-    return {
-      email_notifications:
-        typeof dbValue.email_notifications === "boolean"
-          ? dbValue.email_notifications
-          : true,
-    };
-  }
-  return { email_notifications: true };
-}
-
-const ProfileSettings: React.FC = () => {
-  const [userId, setUserId] = React.useState<string | undefined>();
+export default function ProfileSettings() {
+  const [profile, setProfile] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    location: "",
+    bio: ""
+  });
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  
   const { toast } = useToast();
   const navigate = useNavigate();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Get current user id on mount
-  React.useEffect(() => {
-    (async () => {
-      const { data } = await supabase.auth.getUser();
-      if (!data?.user) {
-        navigate("/onboarding"); // not logged in: redirect
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        navigate("/auth");
         return;
       }
-      setUserId(data.user.id);
-    })();
-  }, [navigate]);
 
-  const { data, isLoading } = useCurrentUserProfile(userId);
-  const updateProfile = useUpdateCurrentUserProfile(userId);
+      const { data: profileData } = await supabase
+        .from("app_users")
+        .select("*")
+        .eq("id", user.id)
+        .single();
 
-  const { register, setValue, handleSubmit, watch, reset } = useForm<FormValues>({
-    defaultValues: {
-      name: "",
-      email: "",
-      bio: "",
-      language: "en",
-      notification_preferences: { email_notifications: true },
-      profile_photo: undefined
-    }
-  });
-
-  // When data is fetched, reset the form
-  React.useEffect(() => {
-    if (data) {
-      reset({
-        name: data.name || "",
-        email: data.email || "",
-        bio: data.bio || "",
-        language: data.language || "en",
-        notification_preferences: coerceNotificationPref(data.notification_preferences),
-        // profile_photo left empty
+      if (profileData) {
+        setProfile({
+          name: profileData.name || "",
+          email: user.email || "",
+          phone: profileData.phone || "",
+          location: profileData.location || "",
+          bio: profileData.bio || ""
+        });
+      }
+    } catch (error: any) {
+      toast({ 
+        title: "Failed to load profile", 
+        description: error.message,
+        variant: "destructive" 
       });
+    } finally {
+      setInitialLoading(false);
     }
-  }, [data, reset]);
+  };
 
-  const profilePhotoUrl = data?.profile_photo
-    ? data.profile_photo
-    : "https://ui-avatars.com/api/?name=" + encodeURIComponent(data?.name ?? "U");
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
 
-  async function onSubmit(values: FormValues) {
-    let photoUrl = data?.profile_photo || "";
-    // Handle file upload
-    if (values.profile_photo && values.profile_photo.length > 0) {
-      const file = values.profile_photo[0];
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("profile-pictures")
-        .upload(`${userId}/${file.name}`, file, {
-          upsert: true
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) return;
+
+      const { error } = await supabase
+        .from("app_users")
+        .upsert({
+          id: user.id,
+          name: profile.name,
+          phone: profile.phone,
+          location: profile.location,
+          bio: profile.bio
         });
-      if (uploadError) {
-        toast({
-          title: "Error uploading image",
-          description: uploadError.message,
-          variant: "destructive"
-        });
-        return;
-      }
-      const { data: publicUrlData } = supabase
-        .storage
-        .from("profile-pictures")
-        .getPublicUrl(`${userId}/${file.name}`);
-      photoUrl = publicUrlData.publicUrl;
+
+      if (error) throw error;
+
+      toast({ title: "Profile updated successfully!" });
+    } catch (error: any) {
+      toast({ 
+        title: "Failed to update profile", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    } finally {
+      setLoading(false);
     }
+  };
 
-    updateProfile.mutate({
-      name: values.name,
-      bio: values.bio,
-      language: values.language,
-      profile_photo: photoUrl,
-      notification_preferences: values.notification_preferences
-    }, {
-      onSuccess: () => {
-        toast({
-          title: "Profile updated successfully",
-        });
-      },
-      onError: (err: any) => {
-        toast({
-          title: "Update failed",
-          description: String(err.message),
-          variant: "destructive"
-        });
-      }
-    });
-  }
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
 
-  if (!userId || isLoading) {
+  if (initialLoading) {
     return (
-      <div className="flex items-center justify-center py-10 text-gray-500">
-        Loading profile...
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+        <div className="bg-white rounded-xl shadow-md p-6 border text-center">
+          <p className="text-muted-foreground">Loading profile...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-xl mx-auto bg-white rounded-lg shadow-md p-6 my-8 sm:my-10">
-      <h1 className="text-2xl font-bold mb-4">Profile Settings</h1>
-      <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-        {/* --- Account Info Section --- */}
-        <div>
-          <h2 className="font-semibold text-lg mb-2">Account Info</h2>
-          <div className="flex flex-col gap-4 sm:flex-row sm:gap-6">
-            <div className="flex flex-col items-center sm:items-start">
-              <img
-                src={profilePhotoUrl}
-                alt="Profile"
-                className="rounded-full w-24 h-24 object-cover border"
-              />
-              <input
-                type="file"
-                accept="image/*"
-                {...register("profile_photo")}
-                ref={fileInputRef}
-                className="mt-2"
-              />
-            </div>
-            <div className="flex-1 flex flex-col gap-3">
-              <div>
-                <label className="block text-sm font-medium mb-1">Full Name</label>
-                <Input {...register("name", { required: true })} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Email (read-only)</label>
-                <Input value={watch("email")} readOnly className="opacity-60"/>
-              </div>
-            </div>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+      <div className="bg-white rounded-xl shadow-md p-6 border">
+        <div className="flex items-center gap-3 mb-6">
+          <User className="text-primary" size={24} />
+          <div>
+            <h1 className="text-xl font-bold">Profile Settings</h1>
+            <p className="text-xs text-muted-foreground">Manage your account information</p>
           </div>
         </div>
-        {/* --- Preferences Section --- */}
-        <div>
-          <h2 className="font-semibold text-lg mb-2">Preferences</h2>
-          <div className="flex flex-col gap-3">
-            <div>
-              <label className="block text-sm font-medium mb-1">Bio / Description</label>
-              <textarea
-                {...register("bio")}
-                className="w-full rounded-md border px-3 py-2"
-                rows={3}
-                maxLength={300}
+
+        <form onSubmit={handleSave} className="space-y-6">
+          <div>
+            <Label className="text-sm font-medium text-gray-700">Full Name</Label>
+            <Input
+              value={profile.name}
+              onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+              placeholder="Enter your full name"
+              className="w-full px-4 py-2 border rounded-md text-sm mt-1"
+            />
+          </div>
+
+          <div>
+            <Label className="text-sm font-medium text-gray-700">Email</Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+              <Input
+                value={profile.email}
+                disabled
+                className="w-full pl-10 pr-4 py-2 border rounded-md text-sm mt-1 bg-gray-50"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Language Preference</label>
-              <select
-                {...register("language")}
-                className="w-full rounded-md border px-3 py-2"
-              >
-                {LANGUAGES.map(lang => (
-                  <option key={lang.value} value={lang.value}>{lang.label}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Email Notifications</label>
-              <input
-                type="checkbox"
-                checked={!!watch("notification_preferences.email_notifications")}
-                onChange={e =>
-                  setValue("notification_preferences", {
-                    ...watch("notification_preferences"),
-                    email_notifications: e.target.checked
-                  })
-                }
-                className="mr-2"
+            <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
+          </div>
+
+          <div>
+            <Label className="text-sm font-medium text-gray-700">Phone Number</Label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+              <Input
+                value={profile.phone}
+                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                placeholder="+1 (555) 123-4567"
+                className="w-full pl-10 pr-4 py-2 border rounded-md text-sm mt-1"
               />
-              <span>Enable email notifications</span>
             </div>
           </div>
-        </div>
-        {/* --- Save Button --- */}
-        <div className="flex justify-end">
-          <Button type="submit" disabled={updateProfile.status === "pending"}>Save Changes</Button>
-        </div>
-      </form>
+
+          <div>
+            <Label className="text-sm font-medium text-gray-700">Location</Label>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+              <Input
+                value={profile.location}
+                onChange={(e) => setProfile({ ...profile, location: e.target.value })}
+                placeholder="City, Country"
+                className="w-full pl-10 pr-4 py-2 border rounded-md text-sm mt-1"
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-sm font-medium text-gray-700">Bio</Label>
+            <textarea
+              value={profile.bio}
+              onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+              placeholder="Tell others about yourself..."
+              rows={4}
+              className="w-full px-4 py-2 border rounded-md text-sm mt-1 resize-none"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <Button
+              type="submit"
+              disabled={loading}
+              className="min-w-[120px] bg-primary text-white hover:bg-primary/90 px-4 py-2 rounded-md"
+            >
+              {loading ? "Saving..." : "Save Changes"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate("/")}
+              className="min-w-[120px] border rounded-md px-4 py-2 hover:bg-gray-100"
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-md p-6 border">
+        <h2 className="text-xl font-bold mb-4 text-red-600">Danger Zone</h2>
+        <p className="text-xs text-muted-foreground mb-4">
+          Once you sign out, you'll need to log in again to access your account.
+        </p>
+        <Button
+          onClick={handleSignOut}
+          variant="destructive"
+          className="min-w-[120px] flex items-center gap-2"
+        >
+          <LogOut size={16} />
+          Sign Out
+        </Button>
+      </div>
     </div>
   );
-};
-
-export default ProfileSettings;
+}

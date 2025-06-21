@@ -1,207 +1,246 @@
 
-import React, { useState, useRef, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
-import { useChatMessages, useSendMessage } from "@/hooks/useChatMessages";
-import { ChatMessageBubble } from "@/components/ChatMessageBubble";
+import React, { useState, useEffect } from "react";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/components/ui/use-toast";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { translateMessage } from "@/utils/translateMessage";
+import { Send, MessageCircle, User } from "lucide-react";
+import { ChatMessageBubble } from "@/components/ChatMessageBubble";
 
-// Get auth user info (simplest way)
-async function getUserId() {
-  const { data } = await supabase.auth.getUser();
-  return data?.user?.id ?? "";
-}
+type Conversation = {
+  id: string;
+  task_id: string;
+  participants: string[];
+  created_at: string;
+  task: {
+    title: string;
+  };
+};
 
-// Fetches current user's language; falls back to "en" if unavailable.
-async function getCurrentUserLanguage(userId: string): Promise<string> {
-  if (!userId) return "en";
-  const { data, error } = await supabase
-    .from("app_users")
-    .select("language")
-    .eq("id", userId)
-    .single();
-  if (error || !data?.language) return "en";
-  return data.language;
-}
+type Message = {
+  id: string;
+  content: string;
+  sender_id: string;
+  created_at: string;
+  sender: {
+    name: string;
+  };
+};
 
 export default function Chat() {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const taskId = searchParams.get("task_id") || "";
-  const [messageInput, setMessageInput] = useState("");
-  const { data: messages, isLoading, isError } = useChatMessages(taskId);
-  const sendMessage = useSendMessage();
-  const [userId, setUserId] = useState<string>("");
-  const [userLang, setUserLang] = useState<string>("en");
-  const [showTranslations, setShowTranslations] = useState<boolean>(false);
-  const [translations, setTranslations] = useState<Record<string, string>>({});
-  const [loadingTranslations, setLoadingTranslations] = useState<Set<string>>(new Set());
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const { toast } = useToast();
 
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-
-  // Determine other participant (show name as "You" for own messages)
-  const getOtherParticipant = () => {
-    if (!messages || messages.length === 0) return undefined;
-    const msg = messages[0];
-    return msg.sender_id === userId ? msg.receiver_id : msg.sender_id;
-  };
-
-  // Scroll to bottom on new messages
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  // Get current user id and language
-  useEffect(() => {
-    getUserId().then(uid => {
-      setUserId(uid);
-      if (uid) {
-        getCurrentUserLanguage(uid).then(setUserLang);
-      }
-    });
+    loadConversations();
+    getCurrentUser();
   }, []);
 
-  // When toggle changes or messages change, translate necessary messages
   useEffect(() => {
-    if (!showTranslations || !messages || !userId || !userLang) {
-      setTranslations({});
-      return;
+    if (selectedConversation) {
+      loadMessages(selectedConversation);
     }
+  }, [selectedConversation]);
 
-    // In a real app, sender language should be detected or fetched. Here, default others to "en", yours to userLang.
-    messages.forEach((msg) => {
-      // Don't translate own messages
-      if (msg.sender_id === userId) return;
-      // For demo: pretend sender's language is "en", only translate if userLang !== "en"
-      const senderLanguage = "en";
-      if (userLang !== senderLanguage) {
-        // Only translate if not already translated
-        if (!translations[msg.id] && !loadingTranslations.has(msg.id)) {
-          setLoadingTranslations(prev => new Set([...prev, msg.id]));
-          translateMessage(msg.content, userLang)
-            .then(translated => {
-              setTranslations(prev => ({ ...prev, [msg.id]: translated }));
-            })
-            .finally(() => {
-              setLoadingTranslations(prev => {
-                const next = new Set(prev);
-                next.delete(msg.id);
-                return next;
-              });
-            });
-        }
-      }
-    });
-  }, [showTranslations, messages, userLang, userId, translations, loadingTranslations]);
+  const getCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setCurrentUserId(user?.id || null);
+  };
 
-  // Submit a new message
-  async function handleSend(e?: React.FormEvent) {
-    e?.preventDefault();
-    if (!messageInput.trim() || !userId) return;
-    // Figure out receiver (based on last message, or fallback)
-    let receiver_id = "";
-    if (messages && messages.length > 0) {
-      const last = messages[messages.length - 1];
-      receiver_id = last.sender_id === userId ? last.receiver_id : last.sender_id;
-    } else {
-      toast({
-        title: "You cannot send a message.",
-        description: "There are no participants on this task yet.",
-      });
-      return;
-    }
+  const loadConversations = async () => {
     try {
-      await sendMessage.mutateAsync({
-        task_id: taskId,
-        sender_id: userId,
-        receiver_id,
-        content: messageInput.trim(),
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("conversations")
+        .select(`
+          *,
+          task:tasks(title)
+        `)
+        .contains("participants", [user.id])
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      setConversations(data || []);
+      
+      if (data && data.length > 0 && !selectedConversation) {
+        setSelectedConversation(data[0].id);
+      }
+    } catch (error: any) {
+      toast({ 
+        title: "Failed to load conversations", 
+        description: error.message,
+        variant: "destructive" 
       });
-      setMessageInput("");
-    } catch (err: any) {
-      toast({
-        title: "Error sending message",
-        description: err?.message || "Could not send your message.",
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadMessages = async (conversationId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("messages")
+        .select(`
+          *,
+          sender:app_users!messages_sender_id_fkey(name)
+        `)
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      setMessages(data || []);
+    } catch (error: any) {
+      toast({ 
+        title: "Failed to load messages", 
+        description: error.message,
+        variant: "destructive" 
       });
     }
+  };
+
+  const sendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newMessage.trim() || !selectedConversation || !currentUserId) return;
+
+    try {
+      const { error } = await supabase
+        .from("messages")
+        .insert([{
+          conversation_id: selectedConversation,
+          sender_id: currentUserId,
+          content: newMessage.trim()
+        }]);
+
+      if (error) throw error;
+
+      setNewMessage("");
+      loadMessages(selectedConversation);
+    } catch (error: any) {
+      toast({ 
+        title: "Failed to send message", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+        <div className="bg-white rounded-xl shadow-md p-6 border text-center">
+          <p className="text-muted-foreground">Loading conversations...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      {/* Header */}
-      <div className="border-b p-4 flex items-center gap-3 bg-white z-10">
-        <Button variant="ghost" onClick={() => navigate(-1)}>
-          ← Back to Task
-        </Button>
-        <h2 className="font-bold text-lg flex-1">Task Chat</h2>
-        <div>
-          <label className="inline-flex items-center gap-2 cursor-pointer text-sm select-none">
-            <input
-              type="checkbox"
-              checked={showTranslations}
-              onChange={e => setShowTranslations(e.target.checked)}
-              className="accent-primary"
-            />
-            Show translations
-          </label>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
+        {/* Conversations List */}
+        <div className="bg-white rounded-xl shadow-md border overflow-hidden">
+          <div className="p-4 border-b">
+            <div className="flex items-center gap-2">
+              <MessageCircle className="text-primary" size={20} />
+              <h2 className="text-lg font-bold">Messages</h2>
+            </div>
+          </div>
+          
+          <div className="overflow-y-auto">
+            {conversations.length === 0 ? (
+              <div className="p-4 text-center">
+                <p className="text-muted-foreground text-sm">No conversations yet</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Accept an offer to start chatting
+                </p>
+              </div>
+            ) : (
+              conversations.map((conversation) => (
+                <button
+                  key={conversation.id}
+                  onClick={() => setSelectedConversation(conversation.id)}
+                  className={`w-full p-4 text-left border-b hover:bg-gray-50 transition ${
+                    selectedConversation === conversation.id ? "bg-blue-50 border-l-4 border-l-primary" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <User className="text-gray-400" size={16} />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{conversation.task?.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(conversation.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Chat Area */}
+        <div className="lg:col-span-2 bg-white rounded-xl shadow-md border flex flex-col">
+          {selectedConversation ? (
+            <>
+              <div className="p-4 border-b">
+                <h3 className="font-medium">
+                  {conversations.find(c => c.id === selectedConversation)?.task?.title}
+                </h3>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                {messages.map((message) => (
+                  <ChatMessageBubble
+                    key={message.id}
+                    content={message.content}
+                    isOwn={message.sender_id === currentUserId}
+                    senderName={message.sender?.name}
+                    createdAt={message.created_at}
+                  />
+                ))}
+              </div>
+              
+              <form onSubmit={sendMessage} className="p-4 border-t">
+                <div className="flex gap-2">
+                  <Input
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Type your message..."
+                    className="flex-1"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={!newMessage.trim()}
+                    className="min-w-[80px] bg-primary text-white hover:bg-primary/90 px-4 py-2 rounded-md flex items-center gap-2"
+                  >
+                    <Send size={16} />
+                    Send
+                  </Button>
+                </div>
+              </form>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <MessageCircle className="mx-auto text-gray-300 mb-4" size={48} />
+                <p className="text-muted-foreground">Select a conversation to start chatting</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-      {/* Message area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 pt-6 pb-24">
-        {isLoading && <div className="text-center text-muted-foreground">Loading messages...</div>}
-        {isError && <div className="text-center text-red-500">Failed to load messages.</div>}
-        {(!messages || messages.length === 0) && !isLoading && (
-          <div className="text-center text-muted-foreground">No messages yet.</div>
-        )}
-        {messages &&
-          messages.map((msg) => {
-            const isOwn = msg.sender_id === userId;
-            const hasTranslation =
-              !isOwn &&
-              showTranslations &&
-              translations[msg.id] !== undefined &&
-              translations[msg.id] !== msg.content &&
-              userLang !== "en";
-            return (
-              <div key={msg.id}>
-                <ChatMessageBubble
-                  content={msg.content}
-                  isOwn={isOwn}
-                  senderName={isOwn ? undefined : "Provider"}
-                  createdAt={msg.created_at}
-                />
-                {hasTranslation && (
-                  <div className="ml-6 mt-0.5 text-sm italic text-gray-500">
-                    {translations[msg.id]}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-      </div>
-      {/* Input area */}
-      <form
-        onSubmit={handleSend}
-        className="fixed bottom-0 left-0 right-0 bg-white border-t flex gap-2 px-2 py-2"
-        style={{ zIndex: 20 }}
-      >
-        <Textarea
-          value={messageInput}
-          onChange={(e) => setMessageInput(e.target.value)}
-          rows={1}
-          placeholder="Type your message…"
-          className="flex-1 resize-none"
-          autoFocus
-        />
-        <Button type="submit" disabled={sendMessage.isPending || !messageInput.trim()}>
-          Send
-        </Button>
-      </form>
     </div>
   );
 }

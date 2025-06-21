@@ -1,156 +1,201 @@
 
 import React, { useState } from "react";
-import { Card } from "@/components/ui/card";
+import { Card }  "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "@/components/ui/use-toast";
-import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { Crown, Star, Zap, Shield, Check } from "lucide-react";
 
-const PACKAGES = [
+type Package = {
+  id: string;
+  name: string;
+  price: number;
+  period: string;
+  description: string;
+  features: string[];
+  popular?: boolean;
+  icon: React.ReactNode;
+  color: string;
+};
+
+const packages: Package[] = [
   {
-    id: "free",
-    label: "Free",
-    priceMonthly: 0,
-    priceYearly: 0,
-    commission: 0.2,
+    id: "basic",
+    name: "Basic",
+    price: 9.99,
+    period: "month",
+    description: "Perfect for occasional task posting",
     features: [
-      "20% commission",
-      "No task boosts",
+      "Post up to 5 tasks per month",
+      "Basic customer support",
+      "Standard task visibility",
+      "Access to all categories"
     ],
-  },
-  {
-    id: "plus",
-    label: "Plus",
-    priceMonthly: 5,
-    priceYearly: 50,
-    commission: 0.15,
-    features: [
-      "15% commission",
-      "1 free 8h boost/mo",
-    ],
+    icon: <Star className="text-blue-500" size={24} />,
+    color: "border-blue-200"
   },
   {
     id: "pro",
-    label: "Pro",
-    priceMonthly: 12,
-    priceYearly: 120,
-    commission: 0.10,
+    name: "Pro",
+    price: 19.99,
+    period: "month",
+    description: "Great for regular users and small businesses",
     features: [
-      "10% commission",
-      "3 free 24h boosts/mo",
-      "Auto-prioritized in feed",
+      "Unlimited task posting",
+      "Priority customer support",
+      "Enhanced task visibility",
+      "Advanced filtering options",
+      "Task analytics dashboard",
+      "Custom task templates"
     ],
+    popular: true,
+    icon: <Crown className="text-yellow-500" size={24} />,
+    color: "border-yellow-300"
   },
+  {
+    id: "enterprise",
+    name: "Enterprise",
+    price: 49.99,
+    period: "month",
+    description: "For businesses with high-volume needs",
+    features: [
+      "Everything in Pro",
+      "Dedicated account manager",
+      "Custom integrations",
+      "Advanced reporting",
+      "Team collaboration tools",
+      "SLA guarantees",
+      "White-label options"
+    ],
+    icon: <Shield className="text-purple-500" size={24} />,
+    color: "border-purple-200"
+  }
 ];
 
-const getFormattedPrice = (pkg: typeof PACKAGES[0], yearly: boolean) =>
-  pkg.id === "free"
-    ? "€0"
-    : yearly
-    ? `€${pkg.priceYearly}/year`
-    : `€${pkg.priceMonthly}/month`;
-
 export default function PremiumPackages() {
-  // Demo/mock: Replace with actual user plan/query in real app!
-  const [userPlan, setUserPlan] = useState<"free" | "plus" | "pro">("free");
-  const [subscribed, setSubscribed] = useState<boolean>(userPlan !== "free");
-  const [loadingPkg, setLoadingPkg] = useState<string | null>(null);
-  const [isYearly, setIsYearly] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
-  async function handleSelectPlan(id: string) {
-    setLoadingPkg(id);
-    toast({ title: "Redirecting...", description: "Connecting to Stripe Checkout..." });
+  const handleSubscribe = async (packageId: string) => {
+    setLoading(true);
+    setSelectedPackage(packageId);
+    
     try {
-      // TODO: Integrate real Stripe Checkout via edge function
-      // const { data, error } = await supabase.functions.invoke('create-checkout', { body: { plan: id, interval: isYearly ? "year" : "month" } });
-      // if (error) throw error;
-      // window.open(data.url, "_blank");
-      setTimeout(() => {
-        setUserPlan(id as any); // For demo/mock
-        setSubscribed(id !== "free");
-        toast({ title: "Success!", description: "Demo Stripe Checkout simulated. Your plan will update automatically in real use." });
-        setLoadingPkg(null);
-      }, 1200);
-    } catch (e: any) {
-      toast({ title: "Error", description: e?.message || String(e) });
-      setLoadingPkg(null);
+      // Simulate payment processing
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      toast({ 
+        title: "Subscription successful!", 
+        description: `You've successfully subscribed to the ${packages.find(p => p.id === packageId)?.name} plan.`
+      });
+    } catch (error) {
+      toast({ 
+        title: "Subscription failed", 
+        description: "Please try again later.",
+        variant: "destructive" 
+      });
+    } finally {
+      setLoading(false);
+      setSelectedPackage(null);
     }
-  }
-
-  // Demo customer portal, would be Stripe Customer Portal in production
-  function handleManageSubscription() {
-    toast({
-      title: "Manage Subscription",
-      description: "You'd be sent to the Stripe customer portal here.",
-    });
-    // TODO: Real: window.open(data.url, "_blank");
-  }
+  };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10">
-      <h1 className="text-3xl font-bold mb-2 text-primary text-center">Premium Packages</h1>
-      <p className="text-center text-muted-foreground mb-8">Choose your subscription plan to unlock better commissions and boost your tasks.</p>
-      <div className="flex items-center justify-center mb-8 gap-2">
-        <span className={cn(!isYearly && "font-bold text-primary")}>Monthly</span>
-        <button
-          className={cn(
-            "mx-1 w-10 h-6 rounded-full bg-muted relative transition-colors",
-            isYearly ? "bg-primary/70" : "bg-muted"
-          )}
-          aria-label="Toggle yearly"
-          onClick={() => setIsYearly(y => !y)}
-        >
-          <span
-            className={cn(
-              "block w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-transform",
-              isYearly ? "translate-x-4 bg-primary" : "translate-x-0"
-            )}
-          />
-        </button>
-        <span className={cn(isYearly && "font-bold text-primary")}>Yearly</span>
-        {isYearly && (
-          <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700 font-medium">Save ~20%</span>
-        )}
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+      <div className="text-center bg-white rounded-xl shadow-md p-6 border">
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <Zap className="text-primary" size={32} />
+          <h1 className="text-2xl font-bold">Premium Plans</h1>
+        </div>
+        <p className="text-muted-foreground max-w-2xl mx-auto">
+          Unlock the full potential of Task Hub with our premium plans. 
+          Get more visibility, advanced features, and priority support.
+        </p>
       </div>
-      <div className="grid md:grid-cols-3 gap-6 mb-10">
-        {PACKAGES.map(pkg => {
-          const selected = userPlan === pkg.id;
-          return (
-            <Card
-              key={pkg.id}
-              className={cn(
-                "flex flex-col px-6 py-8 rounded-2xl shadow border transition-all",
-                selected ? "border-primary ring-2 ring-primary" : "border-muted"
-              )}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <h2 className="text-xl font-semibold">{pkg.label}</h2>
-                {selected && (
-                  <Badge className="bg-primary text-primary-foreground ml-2">Current Plan</Badge>
-                )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {packages.map((pkg) => (
+          <div
+            key={pkg.id}
+            className={`bg-white rounded-xl shadow-md border-2 ${pkg.color} ${
+              pkg.popular ? "ring-2 ring-yellow-400 ring-offset-2" : ""
+            } relative overflow-hidden`}
+          >
+            {pkg.popular && (
+              <div className="absolute top-0 right-0 bg-yellow-400 text-yellow-900 px-3 py-1 text-xs font-bold rounded-bl-lg">
+                Most Popular
               </div>
-              <div className="text-3xl font-bold mb-2">{getFormattedPrice(pkg, isYearly)}</div>
-              <ul className="mb-6 text-sm space-y-1 list-disc pl-6 text-muted-foreground">
-                {pkg.features.map(f => <li key={f}>{f}</li>)}
+            )}
+            
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                {pkg.icon}
+                <div>
+                  <h3 className="text-xl font-bold">{pkg.name}</h3>
+                  <p className="text-xs text-muted-foreground">{pkg.description}</p>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl font-bold">€{pkg.price}</span>
+                  <span className="text-muted-foreground">/{pkg.period}</span>
+                </div>
+              </div>
+
+              <ul className="space-y-3 mb-6">
+                {pkg.features.map((feature, index) => (
+                  <li key={index} className="flex items-start gap-2 text-sm">
+                    <Check className="text-green-500 flex-shrink-0 mt-0.5" size={16} />
+                    <span>{feature}</span>
+                  </li>
+                ))}
               </ul>
+
               <Button
-                disabled={selected || loadingPkg !== null}
-                variant={selected ? "secondary" : "default"}
-                className="mt-auto font-semibold text-base py-2"
-                onClick={() => handleSelectPlan(pkg.id)}
+                onClick={() => handleSubscribe(pkg.id)}
+                disabled={loading}
+                className={`w-full min-w-[120px] ${
+                  pkg.popular 
+                    ? "bg-yellow-500 text-white hover:bg-yellow-600" 
+                    : "bg-primary text-white hover:bg-primary/90"
+                } px-4 py-2 rounded-md`}
               >
-                {selected ? "Selected" : loadingPkg === pkg.id ? "Redirecting..." : "Select Plan"}
+                {loading && selectedPackage === pkg.id ? "Processing..." : "Subscribe Now"}
               </Button>
-            </Card>
-          );
-        })}
+            </div>
+          </div>
+        ))}
       </div>
-      <div className="flex items-center justify-center">
-        {subscribed ? (
-          <Button variant="outline" onClick={handleManageSubscription}>Manage Subscription</Button>
-        ) : (
-          <span className="text-xs text-muted-foreground">You're on the Free plan.</span>
-        )}
+
+      <div className="bg-white rounded-xl shadow-md p-6 border">
+        <h2 className="text-xl font-bold mb-4">Frequently Asked Questions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h3 className="font-medium mb-2">Can I cancel anytime?</h3>
+            <p className="text-sm text-muted-foreground">
+              Yes, you can cancel your subscription at any time. You'll continue to have access until the end of your billing period.
+            </p>
+          </div>
+          <div>
+            <h3 className="font-medium mb-2">Do you offer refunds?</h3>
+            <p className="text-sm text-muted-foreground">
+              We offer a 30-day money-back guarantee for all premium plans if you're not satisfied.
+            </p>
+          </div>
+          <div>
+            <h3 className="font-medium mb-2">Can I upgrade or downgrade?</h3>
+            <p className="text-sm text-muted-foreground">
+              Yes, you can change your plan at any time. Changes will be prorated based on your billing cycle.
+            </p>
+          </div>
+          <div>
+            <h3 className="font-medium mb-2">What payment methods do you accept?</h3>
+            <p className="text-sm text-muted-foreground">
+              We accept all major credit cards, PayPal, and bank transfers for enterprise plans.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

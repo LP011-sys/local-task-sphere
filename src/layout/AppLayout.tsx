@@ -15,24 +15,49 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-slate-100">
-      <header className="sticky top-0 z-40 w-full border-b bg-white/90 backdrop-blur">
+      <header className="sticky top-0 z-40 w-full border-b bg-white/90 backdrop-blur shadow-sm">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
-          {/* Make logo a link to home */}
-          <a
-            href="/"
-            className="flex items-center gap-2 font-bold text-2xl tracking-tight text-primary hover:underline focus:outline-none"
+          {/* Logo - clickable link to home */}
+          <NavLink
+            to="/"
+            className="flex items-center gap-2 font-bold text-2xl tracking-tight text-primary hover:text-primary/80 focus:outline-none transition-colors"
             aria-label="Task Hub Home"
-            tabIndex={0}
           >
             Task Hub
-          </a>
-          <div className="flex gap-1 sm:gap-3">
+          </NavLink>
+          
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex gap-1">
             {navLinks.map(link => (
               <NavLink
                 key={link.path}
                 to={link.path}
                 className={({ isActive }) =>
-                  `inline-block px-3 py-2 rounded-md transition font-medium hover:bg-accent hover:text-primary ${isActive ? "bg-primary text-primary-foreground shadow" : ""}`
+                  `inline-block px-4 py-2 rounded-md transition-all font-medium text-sm hover:bg-accent hover:text-primary ${
+                    isActive 
+                      ? "bg-primary text-primary-foreground shadow-md font-semibold" 
+                      : "text-muted-foreground"
+                  }`
+                }
+                end={link.path === "/"}
+              >
+                {link.label}
+              </NavLink>
+            ))}
+          </div>
+
+          {/* Mobile Navigation */}
+          <div className="flex md:hidden gap-1">
+            {navLinks.slice(0, 3).map(link => (
+              <NavLink
+                key={link.path}
+                to={link.path}
+                className={({ isActive }) =>
+                  `inline-block px-2 py-1 rounded-md transition-all font-medium text-xs hover:bg-accent hover:text-primary ${
+                    isActive 
+                      ? "bg-primary text-primary-foreground shadow-md font-semibold" 
+                      : "text-muted-foreground"
+                  }`
                 }
                 end={link.path === "/"}
               >
@@ -42,6 +67,7 @@ export default function AppLayout() {
           </div>
         </nav>
       </header>
+      
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full">
         <Outlet />
       </main>

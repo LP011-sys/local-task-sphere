@@ -1,229 +1,176 @@
-import React, { useState } from "react";
-import { useCustomerTaskOffers, useUpdateOfferStatus } from "@/hooks/useCustomerTaskOffers";
+
+import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/use-toast";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { format } from "date-fns";
-import { useTaskStatusMutation } from "@/hooks/useTaskStatusMutation";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Clock, DollarSign, User, CheckCircle, XCircle } from "lucide-react";
 
-// Utility to format provider name fallback
-function formatProviderName(offer: any) {
-  return offer?.provider?.name || "Provider";
-}
+type Offer = {
+  id: string;
+  message: string;
+  price: number;
+  status: string;
+  created_at: string;
+  provider_id: string;
+  task_id: string;
+  task: {
+    title: string;
+    description: string;
+  };
+  provider: {
+    name: string;
+  };
+};
 
 export default function CustomerOffers() {
-  // Loading and data error
-  const { data: tasks, isLoading, isError, error } = useCustomerTaskOffers();
-  const [expandedTaskIds, setExpandedTaskIds] = useState<string[]>([]);
-  const updateStatus = useUpdateOfferStatus();
-  const taskStatusMutation = useTaskStatusMutation();
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
-  // Handlers for expand/collapse
-  const toggleExpand = (taskId: string) => {
-    setExpandedTaskIds((prev) =>
-      prev.includes(taskId)
-        ? prev.filter((id) => id !== taskId)
-        : [...prev, taskId]
-    );
+  useEffect(() => {
+    loadOffers();
+  }, []);
+
+  const loadOffers = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("offers")
+        .select(`
+          *,
+          task:tasks(title, description),
+          provider:app_users!offers_provider_id_fkey(name)
+        `)
+        .eq("task.customer_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      setOffers(data || []);
+    } catch (error: any) {
+      toast({ 
+        title: "Failed to load offers", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Accept or Reject offer (update task.status to in_progress on accept)
-  const handleOfferAction = async (
-    offerId: string,
-    action: "accepted" | "rejected",
-    taskId?: string
-  ) => {
+  const handleOfferAction = async (offerId: string, action: "accept" | "reject") => {
     try {
-      await updateStatus.mutateAsync({ offerId, status: action });
-      if (action === "accepted" && taskId) {
-        await taskStatusMutation.mutateAsync({ taskId, status: "in_progress" });
-      }
-      toast({
-        title:
-          action === "accepted"
-            ? "Offer accepted!"
-            : "Offer rejected.",
-        description:
-          action === "accepted"
-            ? "You have accepted this provider's offer."
-            : "You have rejected this provider's offer.",
+      const { error } = await supabase
+        .from("offers")
+        .update({ status: action === "accept" ? "accepted" : "rejected" })
+        .eq("id", offerId);
+
+      if (error) throw error;
+
+      toast({ 
+        title: `Offer ${action}ed successfully!`,
+        description: action === "accept" ? "You can now chat with the provider" : undefined
       });
-    } catch (err: any) {
-      toast({
-        title: "Error",
-        description: err?.message || "Unable to update offer status.",
+      
+      loadOffers();
+    } catch (error: any) {
+      toast({ 
+        title: `Failed to ${action} offer`, 
+        description: error.message,
+        variant: "destructive" 
       });
     }
   };
 
+  if (loading) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+        <div className="bg-white rounded-xl shadow-md p-6 border text-center">
+          <p className="text-muted-foreground">Loading offers...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-3xl mx-auto px-2 py-6">
-      <h1 className="text-2xl font-bold mb-4">Your Tasks & Provider Offers</h1>
-      {isLoading && (
-        <Card className="mb-2 text-center">
-          <div className="animate-pulse py-8 text-muted-foreground">
-            Loading your tasks and offers...
-          </div>
-        </Card>
-      )}
-      {isError && (
-        <Card className="mb-2 text-center bg-red-50 border border-red-200">
-          <div className="py-8 text-red-700 font-medium">{String(error)}</div>
-        </Card>
-      )}
-      {!isLoading && !isError && (!tasks || tasks.length === 0) && (
-        <Card className="mb-2 text-center text-muted-foreground">
-          <div className="py-8">You have not posted any tasks yet.</div>
-        </Card>
-      )}
-      {/* Main task/offer list */}
-      {!isLoading &&
-        tasks &&
-        tasks.length > 0 &&
-        tasks.map((task) => (
-          <Card key={task.id} className="mb-4">
-            <div
-              className="flex justify-between items-center cursor-pointer"
-              onClick={() => toggleExpand(task.id)}
-            >
-              <div>
-                <div className="font-semibold text-base">{task.description}</div>
-                <div className="text-sm text-muted-foreground">
-                  Category: <span className="font-medium">{task.category}</span>
-                  {task.deadline && (
-                    <>
-                      {" "}
-                      | Deadline:{" "}
-                      <span className="font-medium">
-                        {format(new Date(task.deadline), "dd MMM yyyy, HH:mm")}
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
-              <div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Expand offers"
-                  tabIndex={-1}
-                  type="button"
-                >
-                  {expandedTaskIds.includes(task.id) ? (
-                    <ChevronUp className="w-5 h-5" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5" />
-                  )}
-                </Button>
-              </div>
-            </div>
-            {/* Offers list */}
-            {expandedTaskIds.includes(task.id) && (
-              <div className="mt-4">
-                {task.offers.length === 0 ? (
-                  <div className="text-muted-foreground text-center py-4">
-                    No offers received for this task.
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+      <div className="bg-white rounded-xl shadow-md p-6 border">
+        <h1 className="text-xl font-bold mb-4">Offers Received</h1>
+        <p className="text-xs text-muted-foreground">
+          Review and manage offers from service providers
+        </p>
+      </div>
+
+      {offers.length === 0 ? (
+        <div className="bg-white rounded-xl shadow-md p-6 border text-center">
+          <p className="text-muted-foreground mb-4">No offers received yet</p>
+          <p className="text-xs text-muted-foreground">
+            Post a task to start receiving offers from providers
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {offers.map((offer) => (
+            <div key={offer.id} className="bg-white rounded-xl shadow-md p-6 border">
+              <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <User className="text-primary" size={16} />
+                    <span className="text-sm font-medium text-gray-700">
+                      {offer.provider?.name || "Provider"}
+                    </span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      offer.status === "pending" ? "bg-yellow-100 text-yellow-800" :
+                      offer.status === "accepted" ? "bg-green-100 text-green-800" :
+                      "bg-red-100 text-red-800"
+                    }`}>
+                      {offer.status}
+                    </span>
                   </div>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    {task.offers.map((offer) => (
-                      <Card
-                        key={offer.id}
-                        className="p-4 flex flex-col md:flex-row justify-between items-start gap-2"
-                      >
-                        {/* Provider info */}
-                        <div className="min-w-0">
-                          <div className="font-medium text-base mb-1">
-                            {formatProviderName(offer)}
-                          </div>
-                          <div className="text-sm text-muted-foreground mb-1">
-                            {offer.created_at
-                              ? `Offered on ${format(
-                                  new Date(offer.created_at),
-                                  "dd MMM yyyy, HH:mm"
-                                )}`
-                              : ""}
-                          </div>
-                          <div className="mb-1">
-                            {offer.message && (
-                              <span>
-                                <span className="font-semibold">Message: </span>
-                                {offer.message}
-                              </span>
-                            )}
-                          </div>
-                          <div className="font-semibold">
-                            Offer:{" "}
-                            {offer.price
-                              ? `€${offer.price}`
-                              : "Accepts posted budget"}
-                          </div>
-                        </div>
-                        {/* Action buttons */}
-                        <div className="flex flex-col gap-2">
-                          <span
-                            className={`rounded px-3 py-1 text-xs font-semibold ${
-                              offer.status === "pending"
-                                ? "bg-blue-100 text-blue-800"
-                                : offer.status === "accepted"
-                                ? "bg-green-100 text-green-800"
-                                : offer.status === "rejected"
-                                ? "bg-red-100 text-red-800"
-                                : ""
-                            }`}
-                          >
-                            {offer.status.charAt(0).toUpperCase() +
-                              offer.status.slice(1)}
-                          </span>
-                          {offer.status === "pending" && (
-                            <div className="flex gap-1 mt-1">
-                              <Button
-                                size="sm"
-                                onClick={() =>
-                                  handleOfferAction(offer.id, "accepted", offer.task_id)
-                                }
-                              >
-                                Accept
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() =>
-                                  handleOfferAction(offer.id, "rejected", offer.task_id)
-                                }
-                              >
-                                Reject
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </Card>
-                    ))}
+                  
+                  <h3 className="font-medium mb-2">{offer.task?.title}</h3>
+                  <p className="text-sm text-gray-600 mb-3">{offer.message}</p>
+                  
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <DollarSign size={14} />
+                      <span>€{offer.price}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Clock size={14} />
+                      <span>{new Date(offer.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {offer.status === "pending" && (
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => handleOfferAction(offer.id, "accept")}
+                      className="min-w-[100px] bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded-md flex items-center gap-1"
+                    >
+                      <CheckCircle size={16} />
+                      Accept
+                    </Button>
+                    <Button
+                      onClick={() => handleOfferAction(offer.id, "reject")}
+                      variant="outline"
+                      className="min-w-[100px] border border-red-200 text-red-600 hover:bg-red-50 px-4 py-2 rounded-md flex items-center gap-1"
+                    >
+                      <XCircle size={16} />
+                      Reject
+                    </Button>
                   </div>
                 )}
               </div>
-            )}
-          </Card>
-        ))}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
-}
-
-// ----- Utilities -----
-function formatDate(date: string) {
-  try {
-    return format(new Date(date), "dd MMM yyyy, HH:mm");
-  } catch {
-    return date;
-  }
-}
-function timeUntilDeadline(iso: string) {
-  const deadline = new Date(iso).getTime();
-  const now = Date.now();
-  if (now > deadline) return null;
-  const mins = Math.floor((deadline - now) / (1000 * 60));
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return `${h}h ${m}m`;
 }
