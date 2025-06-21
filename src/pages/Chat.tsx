@@ -10,9 +10,9 @@ import { ChatMessageBubble } from "@/components/ChatMessageBubble";
 
 type TaskWithMessages = {
   id: string;
-  title: string;
+  description: string;
   status: string;
-  customer_id: string;
+  user_id: string;
   created_at: string;
 };
 
@@ -59,11 +59,11 @@ export default function Chat() {
       
       if (!user) return;
 
-      // Get tasks where user is involved (as customer or has sent/received messages)
+      // Get tasks where user is involved (as customer)
       const { data: tasksData, error: tasksError } = await supabase
         .from("Tasks")
-        .select("id, title, status, customer_id, created_at")
-        .or(`customer_id.eq.${user.id}`)
+        .select("id, description, status, user_id, created_at")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (tasksError) throw tasksError;
@@ -116,8 +116,8 @@ export default function Chat() {
     const task = tasks.find(t => t.id === selectedTask);
     if (!task) return;
 
-    // For now, assume the receiver is the task customer if current user is not customer
-    const receiverId = task.customer_id === currentUserId ? task.customer_id : task.customer_id;
+    // For now, assume the receiver is the task user if current user is not task user
+    const receiverId = task.user_id === currentUserId ? task.user_id : task.user_id;
 
     try {
       const { error } = await supabase
@@ -184,7 +184,7 @@ export default function Chat() {
                   <div className="flex items-center gap-3">
                     <User className="text-gray-400" size={16} />
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{task.title}</p>
+                      <p className="font-medium text-sm truncate">{task.description.substring(0, 50)}...</p>
                       <p className="text-xs text-muted-foreground">
                         {new Date(task.created_at).toLocaleDateString()}
                       </p>
@@ -202,7 +202,7 @@ export default function Chat() {
             <>
               <div className="p-4 border-b">
                 <h3 className="font-medium">
-                  {tasks.find(t => t.id === selectedTask)?.title}
+                  {tasks.find(t => t.id === selectedTask)?.description.substring(0, 100)}...
                 </h3>
               </div>
               

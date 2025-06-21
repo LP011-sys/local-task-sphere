@@ -15,7 +15,6 @@ type Offer = {
   provider_id: string;
   task_id: string;
   task: {
-    title: string;
     description: string;
   } | null;
   provider: {
@@ -42,7 +41,7 @@ export default function CustomerOffers() {
       const { data: userTasks, error: tasksError } = await supabase
         .from("Tasks")
         .select("id")
-        .eq("customer_id", user.id);
+        .eq("user_id", user.id);
 
       if (tasksError) throw tasksError;
 
@@ -59,7 +58,7 @@ export default function CustomerOffers() {
         .from("offers")
         .select(`
           *,
-          Tasks!inner(title, description),
+          Tasks!inner(description),
           app_users!offers_provider_id_fkey(name)
         `)
         .in("task_id", taskIds)
@@ -77,7 +76,6 @@ export default function CustomerOffers() {
         provider_id: offer.provider_id,
         task_id: offer.task_id,
         task: offer.Tasks ? {
-          title: offer.Tasks.title || "",
           description: offer.Tasks.description || ""
         } : null,
         provider: offer.app_users ? {
@@ -167,7 +165,7 @@ export default function CustomerOffers() {
                     </span>
                   </div>
                   
-                  <h3 className="font-medium mb-2">{offer.task?.title || "Task"}</h3>
+                  <h3 className="font-medium mb-2">{offer.task?.description?.substring(0, 100) || "Task"}...</h3>
                   <p className="text-sm text-gray-600 mb-3">{offer.message}</p>
                   
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
