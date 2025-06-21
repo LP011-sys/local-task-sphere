@@ -1,15 +1,17 @@
 
-// This hook now fetches all open tasks for providers to browse, not just tasks by a specific provider.
-
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Fetches provider-viewable tasks (status "open", or optionally filter).
+ * Now includes real-time updates for task changes.
  * @param opts Optional: { userId, status }
  */
 export function useProviderTasks(userId?: string, status: string = "open") {
-  return useQuery({
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
     queryKey: ["provider-tasks", { status }],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -20,6 +22,55 @@ export function useProviderTasks(userId?: string, status: string = "open") {
       if (error) throw error;
       return data ?? [];
     },
-    refetchInterval: 3000,
   });
+
+  // Real-time subscription for task changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('provider-tasks-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'Tasks',
+          filter: `status=eq.${status}`
+        },
+        (payload) => {
+          console.log('New task added:', payload);
+          queryClient.invalidateQueries({ queryKey: ["provider-tasks", { status }] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'Tasks'
+        },
+        (payload) => {
+          console.log('Task updated:', payload);
+          queryClient.invalidateQueries({ queryKey: ["provider-tasks", { status }] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'Tasks'
+        },
+        (payload) => {
+          console.log('Task deleted:', payload);
+          queryClient.invalidateQueries({ queryKey: ["provider-tasks", { status }] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [status, queryClient]);
+
+  return query;
 }

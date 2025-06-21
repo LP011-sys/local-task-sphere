@@ -7,6 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Send, MessageCircle, User } from "lucide-react";
 import { ChatMessageBubble } from "@/components/ChatMessageBubble";
+import { NotificationBadge } from "@/components/ui/notification-badge";
+import { useChatMessages, useSendMessage } from "@/hooks/useChatMessages";
 
 type TaskWithMessages = {
   id: string;
@@ -16,37 +18,23 @@ type TaskWithMessages = {
   created_at: string;
 };
 
-type Message = {
-  id: string;
-  content: string;
-  sender_id: string;
-  receiver_id: string;
-  task_id: string;
-  created_at: string;
-  sender: {
-    name: string;
-  };
-};
-
 export default function Chat() {
   const [tasks, setTasks] = useState<TaskWithMessages[]>([]);
   const [selectedTask, setSelectedTask] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const { toast } = useToast();
+
+  // Use the real-time chat messages hook
+  const { data: messages = [], isLoading: messagesLoading } = useChatMessages(selectedTask);
+  const sendMessageMutation = useSendMessage();
 
   useEffect(() => {
     loadTasksWithMessages();
     getCurrentUser();
   }, []);
-
-  useEffect(() => {
-    if (selectedTask) {
-      loadMessages(selectedTask);
-    }
-  }, [selectedTask]);
 
   const getCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -84,29 +72,6 @@ export default function Chat() {
     }
   };
 
-  const loadMessages = async (taskId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("messages")
-        .select(`
-          *,
-          sender:app_users!messages_sender_id_fkey(name)
-        `)
-        .eq("task_id", taskId)
-        .order("created_at", { ascending: true });
-
-      if (error) throw error;
-
-      setMessages(data || []);
-    } catch (error: any) {
-      toast({ 
-        title: "Failed to load messages", 
-        description: error.message,
-        variant: "destructive" 
-      });
-    }
-  };
-
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -120,19 +85,14 @@ export default function Chat() {
     const receiverId = task.user_id === currentUserId ? task.user_id : task.user_id;
 
     try {
-      const { error } = await supabase
-        .from("messages")
-        .insert([{
-          task_id: selectedTask,
-          sender_id: currentUserId,
-          receiver_id: receiverId,
-          content: newMessage.trim()
-        }]);
-
-      if (error) throw error;
+      await sendMessageMutation.mutateAsync({
+        task_id: selectedTask,
+        sender_id: currentUserId,
+        receiver_id: receiverId,
+        content: newMessage.trim()
+      });
 
       setNewMessage("");
-      loadMessages(selectedTask);
     } catch (error: any) {
       toast({ 
         title: "Failed to send message", 
@@ -182,7 +142,9 @@ export default function Chat() {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <User className="text-gray-400" size={16} />
+                    <NotificationBadge show={unreadCounts[task.id] > 0} count={unreadCounts[task.id]}>
+                      <User className="text-gray-400" size={16} />
+                    </NotificationBadge>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{task.description.substring(0, 50)}...</p>
                       <p className="text-xs text-muted-foreground">
@@ -207,15 +169,19 @@ export default function Chat() {
               </div>
               
               <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                {messages.map((message) => (
-                  <ChatMessageBubble
-                    key={message.id}
-                    content={message.content}
-                    isOwn={message.sender_id === currentUserId}
-                    senderName={message.sender?.name}
-                    createdAt={message.created_at}
-                  />
-                ))}
+                {messagesLoading ? (
+                  <div className="text-center text-muted-foreground">Loading messages...</div>
+                ) : (
+                  messages.map((message) => (
+                    <ChatMessageBubble
+                      key={message.id}
+                      content={message.content}
+                      isOwn={message.sender_id === currentUserId}
+                      senderName="User" // You might want to fetch sender names
+                      createdAt={message.created_at}
+                    />
+                  ))
+                )}
               </div>
               
               <form onSubmit={sendMessage} className="p-4 border-t">
@@ -228,7 +194,7 @@ export default function Chat() {
                   />
                   <Button
                     type="submit"
-                    disabled={!newMessage.trim()}
+                    disabled={!newMessage.trim() || sendMessageMutation.isPending}
                     className="min-w-[80px] bg-primary text-white hover:bg-primary/90 px-4 py-2 rounded-md flex items-center gap-2"
                   >
                     <Send size={16} />

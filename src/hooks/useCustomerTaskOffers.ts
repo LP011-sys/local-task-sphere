@@ -1,5 +1,6 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 // Offer type matching the new offers table
@@ -30,7 +31,9 @@ export type CustomerTask = {
 };
 
 export function useCustomerTaskOffers() {
-  return useQuery({
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
     queryKey: ["customer-tasks-with-offers"],
     queryFn: async (): Promise<CustomerTask[]> => {
       // Fetch customer tasks and all offers for them, joining provider info if possible
@@ -69,6 +72,43 @@ export function useCustomerTaskOffers() {
     },
     staleTime: 60_000,
   });
+
+  // Real-time subscription for offer changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('customer-offers-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'offers'
+        },
+        (payload) => {
+          console.log('New offer received:', payload);
+          queryClient.invalidateQueries({ queryKey: ["customer-tasks-with-offers"] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'offers'
+        },
+        (payload) => {
+          console.log('Offer updated:', payload);
+          queryClient.invalidateQueries({ queryKey: ["customer-tasks-with-offers"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
+  return query;
 }
 
 // Accept/reject offer mutation

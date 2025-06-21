@@ -1,5 +1,6 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export type Message = {
@@ -12,7 +13,9 @@ export type Message = {
 };
 
 export function useChatMessages(taskId: string | undefined) {
-  return useQuery({
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
     queryKey: ["messages", taskId],
     queryFn: async (): Promise<Message[]> => {
       if (!taskId) return [];
@@ -25,8 +28,36 @@ export function useChatMessages(taskId: string | undefined) {
       return data ?? [];
     },
     enabled: !!taskId,
-    refetchInterval: 3000, // poll every 3s for simplicity
   });
+
+  // Real-time subscription for new messages
+  useEffect(() => {
+    if (!taskId) return;
+
+    const channel = supabase
+      .channel(`messages-${taskId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `task_id=eq.${taskId}`
+        },
+        (payload) => {
+          console.log('New message received:', payload);
+          // Invalidate and refetch messages
+          queryClient.invalidateQueries({ queryKey: ["messages", taskId] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [taskId, queryClient]);
+
+  return query;
 }
 
 export function useSendMessage() {
