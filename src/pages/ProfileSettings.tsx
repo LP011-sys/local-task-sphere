@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,11 +13,21 @@ import { useToast } from "@/hooks/use-toast";
 export default function ProfileSettings() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
 
   // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile, isLoading: profileLoading } = useCurrentUserProfile(user?.id);
-  const updateProfile = useUpdateCurrentUserProfile(user?.id);
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.id) {
+        setCurrentUserId(user.id);
+      }
+    };
+    getCurrentUser();
+  }, []);
+
+  const { data: profile, isLoading: profileLoading } = useCurrentUserProfile(currentUserId);
+  const updateProfile = useUpdateCurrentUserProfile(currentUserId);
 
   const [formData, setFormData] = useState({
     name: profile?.name || "",

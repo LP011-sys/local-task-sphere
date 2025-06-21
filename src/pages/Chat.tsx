@@ -21,17 +21,27 @@ export default function Chat() {
   const [translationEnabled, setTranslationEnabled] = useState(true);
   const [receiverLanguage, setReceiverLanguage] = useState<string>("en");
   const [hasNewMessages, setHasNewMessages] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
 
   const { data: messages, isLoading } = useChatMessages(taskId);
   const sendMessage = useSendMessage();
 
-  // Get current user profile
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: currentUser } = useCurrentUserProfile(user?.id);
+  // Get current user
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.id) {
+        setCurrentUserId(user.id);
+      }
+    };
+    getCurrentUser();
+  }, []);
+
+  const { data: currentUser } = useCurrentUserProfile(currentUserId);
 
   // Get receiver info and language
   useEffect(() => {
-    if (!taskId || !user?.id) return;
+    if (!taskId || !currentUserId) return;
 
     const fetchReceiverInfo = async () => {
       // Get task info to determine who the receiver is
@@ -42,7 +52,7 @@ export default function Chat() {
         .single();
 
       if (task) {
-        const isTaskOwner = task.user_id === user.id;
+        const isTaskOwner = task.user_id === currentUserId;
         
         // If current user is task owner, receiver could be any provider who made an offer
         // If current user is provider, receiver is the task owner
@@ -86,25 +96,25 @@ export default function Chat() {
     };
 
     fetchReceiverInfo();
-  }, [taskId, user?.id]);
+  }, [taskId, currentUserId]);
 
   // Check for new messages
   useEffect(() => {
     if (messages && messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
-      if (lastMessage.sender_id !== user?.id) {
+      if (lastMessage.sender_id !== currentUserId) {
         setHasNewMessages(true);
       }
     }
-  }, [messages, user?.id]);
+  }, [messages, currentUserId]);
 
   const handleSendMessage = async () => {
-    if (!message.trim() || !taskId || !user?.id || !receiverId) return;
+    if (!message.trim() || !taskId || !currentUserId || !receiverId) return;
 
     try {
       await sendMessage.mutateAsync({
         task_id: taskId,
-        sender_id: user.id,
+        sender_id: currentUserId,
         receiver_id: receiverId,
         content: message,
         senderLanguage: currentUser?.preferred_language || "en",
@@ -144,7 +154,11 @@ export default function Chat() {
       <div className="flex items-center gap-2 mb-4">
         <MessageCircle className="text-primary" />
         <h1 className="text-2xl font-bold">Task Chat</h1>
-        {hasNewMessages && <NotificationBadge />}
+        {hasNewMessages && (
+          <NotificationBadge show={true}>
+            <span></span>
+          </NotificationBadge>
+        )}
       </div>
 
       <TranslationToggle
@@ -164,8 +178,8 @@ export default function Chat() {
               <ChatMessageBubble
                 key={msg.id}
                 content={msg.content}
-                isOwn={msg.sender_id === user?.id}
-                senderName={msg.sender_id === user?.id ? "You" : "Provider"}
+                isOwn={msg.sender_id === currentUserId}
+                senderName={msg.sender_id === currentUserId ? "You" : "Provider"}
                 createdAt={msg.created_at}
                 originalText={msg.original_text}
                 translatedText={msg.translated_text}
