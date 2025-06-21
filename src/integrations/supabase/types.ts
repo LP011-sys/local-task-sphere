@@ -113,25 +113,37 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          original_text: string | null
           receiver_id: string
           sender_id: string
+          source_language: string | null
           task_id: string
+          translated_text: string | null
+          translated_to: string | null
         }
         Insert: {
           content: string
           created_at?: string
           id?: string
+          original_text?: string | null
           receiver_id: string
           sender_id: string
+          source_language?: string | null
           task_id: string
+          translated_text?: string | null
+          translated_to?: string | null
         }
         Update: {
           content?: string
           created_at?: string
           id?: string
+          original_text?: string | null
           receiver_id?: string
           sender_id?: string
+          source_language?: string | null
           task_id?: string
+          translated_text?: string | null
+          translated_to?: string | null
         }
         Relationships: [
           {

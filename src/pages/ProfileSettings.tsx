@@ -1,242 +1,137 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+
+import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { User, Mail, Phone, MapPin, LogOut } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { useCurrentUserProfile, useUpdateCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ProfileSettings() {
-  const [profile, setProfile] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    location: "",
-    bio: "",
-    preferred_language: "en"
-  });
-  const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
-  
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: profile, isLoading: profileLoading } = useCurrentUserProfile(user?.id);
+  const updateProfile = useUpdateCurrentUserProfile(user?.id);
 
-  const loadProfile = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        navigate("/auth");
-        return;
-      }
+  const [formData, setFormData] = useState({
+    name: profile?.name || "",
+    email: profile?.email || "",
+    phone: profile?.phone || "",
+    bio: profile?.bio || "",
+    preferred_language: profile?.preferred_language || "en",
+  });
 
-      const { data: profileData } = await supabase
-        .from("app_users")
-        .select("*")
-        .eq("auth_user_id", user.id)
-        .maybeSingle();
-
-      if (profileData) {
-        setProfile({
-          name: profileData.name || "",
-          email: user.email || "",
-          phone: profileData.phone || "",
-          location: typeof profileData.location === 'string' ? profileData.location : "",
-          bio: profileData.bio || "",
-          preferred_language: profileData.preferred_language || "en"
-        });
-      } else {
-        // Create profile if it doesn't exist
-        setProfile({
-          name: "",
-          email: user.email || "",
-          phone: "",
-          location: "",
-          bio: "",
-          preferred_language: "en"
-        });
-      }
-    } catch (error: any) {
-      toast({ 
-        title: "Failed to load profile", 
-        description: error.message,
-        variant: "destructive" 
+  // Update form data when profile loads
+  React.useEffect(() => {
+    if (profile) {
+      setFormData({
+        name: profile.name || "",
+        email: profile.email || "",
+        phone: profile.phone || "",
+        bio: profile.bio || "",
+        preferred_language: profile.preferred_language || "en",
       });
-    } finally {
-      setInitialLoading(false);
     }
-  };
+  }, [profile]);
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setIsLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) return;
-
-      const { error } = await supabase
-        .from("app_users")
-        .upsert({
-          auth_user_id: user.id,
-          email: user.email || "",
-          name: profile.name,
-          phone: profile.phone,
-          location: profile.location,
-          bio: profile.bio,
-          preferred_language: profile.preferred_language,
-          role: "customer" // Default role
-        });
-
-      if (error) throw error;
-
-      toast({ title: "Profile updated successfully!" });
-    } catch (error: any) {
-      toast({ 
-        title: "Failed to update profile", 
-        description: error.message,
-        variant: "destructive" 
+      await updateProfile.mutateAsync(formData);
+      toast({
+        title: "Success",
+        description: "Profile updated successfully!",
+      });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
-  };
-
-  if (initialLoading) {
+  if (profileLoading) {
     return (
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-        <div className="bg-white rounded-xl shadow-md p-6 border text-center">
-          <p className="text-muted-foreground">Loading profile...</p>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Loading profile...</div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-      <div className="bg-white rounded-xl shadow-md p-6 border">
-        <div className="flex items-center gap-3 mb-6">
-          <User className="text-primary" size={24} />
-          <div>
-            <h1 className="text-xl font-bold">Profile Settings</h1>
-            <p className="text-xs text-muted-foreground">Manage your account information</p>
-          </div>
-        </div>
+    <div className="max-w-2xl mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-6">Profile Settings</h1>
 
-        <form onSubmit={handleSave} className="space-y-6">
-          <div>
-            <Label className="text-sm font-medium text-gray-700">Full Name</Label>
+      <Card className="p-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Full Name</Label>
             <Input
-              value={profile.name}
-              onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-              placeholder="Enter your full name"
-              className="w-full px-4 py-2 border rounded-md text-sm mt-1"
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
             />
           </div>
 
-          <div>
-            <Label className="text-sm font-medium text-gray-700">Email</Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-              <Input
-                value={profile.email}
-                disabled
-                className="w-full pl-10 pr-4 py-2 border rounded-md text-sm mt-1 bg-gray-50"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              required
+            />
           </div>
 
-          <div>
-            <Label className="text-sm font-medium text-gray-700">Phone Number</Label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-              <Input
-                value={profile.phone}
-                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                placeholder="+1 (555) 123-4567"
-                className="w-full pl-10 pr-4 py-2 border rounded-md text-sm mt-1"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone Number</Label>
+            <Input
+              id="phone"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            />
           </div>
 
-          <div>
-            <Label className="text-sm font-medium text-gray-700">Location</Label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-              <Input
-                value={profile.location}
-                onChange={(e) => setProfile({ ...profile, location: e.target.value })}
-                placeholder="City, Country"
-                className="w-full pl-10 pr-4 py-2 border rounded-md text-sm mt-1"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="bio">Bio</Label>
+            <Textarea
+              id="bio"
+              value={formData.bio}
+              onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+              placeholder="Tell us about yourself..."
+              rows={4}
+            />
           </div>
 
           <LanguageSelector
-            value={profile.preferred_language}
-            onChange={(value) => setProfile({ ...profile, preferred_language: value })}
+            value={formData.preferred_language}
+            onChange={(value) => setFormData({ ...formData, preferred_language: value })}
             label="Preferred Language"
           />
 
-          <div>
-            <Label className="text-sm font-medium text-gray-700">Bio</Label>
-            <textarea
-              value={profile.bio}
-              onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-              placeholder="Tell others about yourself..."
-              rows={4}
-              className="w-full px-4 py-2 border rounded-md text-sm mt-1 resize-none"
-            />
-          </div>
-
-          <div className="flex gap-3 pt-4">
-            <Button
-              type="submit"
-              disabled={loading}
-              className="min-w-[120px] bg-primary text-white hover:bg-primary/90 px-4 py-2 rounded-md"
-            >
-              {loading ? "Saving..." : "Save Changes"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate("/")}
-              className="min-w-[120px] border rounded-md px-4 py-2 hover:bg-gray-100"
-            >
-              Cancel
-            </Button>
-          </div>
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="w-full"
+          >
+            {isLoading ? "Updating..." : "Update Profile"}
+          </Button>
         </form>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-md p-6 border">
-        <h2 className="text-xl font-bold mb-4 text-red-600">Danger Zone</h2>
-        <p className="text-xs text-muted-foreground mb-4">
-          Once you sign out, you'll need to log in again to access your account.
-        </p>
-        <Button
-          onClick={handleSignOut}
-          variant="destructive"
-          className="min-w-[120px] flex items-center gap-2"
-        >
-          <LogOut size={16} />
-          Sign Out
-        </Button>
-      </div>
+      </Card>
     </div>
   );
 }
