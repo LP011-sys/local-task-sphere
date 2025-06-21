@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Card }  "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Crown, Star, Zap, Shield, Check } from "lucide-react";
