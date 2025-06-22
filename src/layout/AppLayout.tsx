@@ -4,6 +4,7 @@ import { Outlet } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { useAdminRole } from "@/contexts/AdminRoleContext";
 
 export default function AppLayout() {
@@ -49,9 +50,11 @@ export default function AppLayout() {
     <div className="min-h-screen bg-gradient-to-br from-white via-primary-50 to-slate-100">
       <Header navLinks={navLinks} />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-section w-full">
-        <Outlet />
-      </main>
+      <ErrorBoundary>
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-section w-full" role="main">
+          <Outlet />
+        </main>
+      </ErrorBoundary>
       
       <Footer />
     </div>
