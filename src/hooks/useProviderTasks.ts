@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Fetches provider-viewable tasks (status "open", or optionally filter).
- * Now includes real-time updates for task changes.
+ * Now includes real-time updates for task changes and sorts by boost status.
  * @param opts Optional: { userId, status }
  */
 export function useProviderTasks(userId?: string, status: string = "open") {
@@ -18,6 +18,8 @@ export function useProviderTasks(userId?: string, status: string = "open") {
         .from("Tasks")
         .select("*")
         .eq("status", status)
+        .order("is_boosted", { ascending: false })
+        .order("deadline", { ascending: true })
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];

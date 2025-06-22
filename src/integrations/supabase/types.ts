@@ -396,6 +396,9 @@ export type Database = {
       Tasks: {
         Row: {
           acceptance_deadline: string | null
+          boost_amount: number | null
+          boost_duration: number | null
+          boost_expires_at: string | null
           boost_status: string | null
           category: string
           created_at: string | null
@@ -403,6 +406,7 @@ export type Database = {
           description: string
           id: string
           images: Json | null
+          is_boosted: boolean | null
           location: Json | null
           offer: string | null
           price: string | null
@@ -414,6 +418,9 @@ export type Database = {
         }
         Insert: {
           acceptance_deadline?: string | null
+          boost_amount?: number | null
+          boost_duration?: number | null
+          boost_expires_at?: string | null
           boost_status?: string | null
           category: string
           created_at?: string | null
@@ -421,6 +428,7 @@ export type Database = {
           description: string
           id?: string
           images?: Json | null
+          is_boosted?: boolean | null
           location?: Json | null
           offer?: string | null
           price?: string | null
@@ -432,6 +440,9 @@ export type Database = {
         }
         Update: {
           acceptance_deadline?: string | null
+          boost_amount?: number | null
+          boost_duration?: number | null
+          boost_expires_at?: string | null
           boost_status?: string | null
           category?: string
           created_at?: string | null
@@ -439,6 +450,7 @@ export type Database = {
           description?: string
           id?: string
           images?: Json | null
+          is_boosted?: boolean | null
           location?: Json | null
           offer?: string | null
           price?: string | null

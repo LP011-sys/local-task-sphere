@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -6,6 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import TaskBoostBadge from "./TaskBoostBadge";
 
 const CATEGORIES = [
   { value: "Cleaning", label: "Cleaning" },
@@ -18,9 +20,9 @@ const CATEGORIES = [
 ];
 
 const BOOST_OPTIONS = [
-  { value: "none", label: "No Boost (Free)" },
-  { value: "8h", label: "Boost for 8 hours (€1)" },
-  { value: "24h", label: "Boost for 24 hours (€2.5)" },
+  { value: "none", label: "No Boost (Free)", price: 0, duration: 0 },
+  { value: "8h", label: "Boost for 8 hours (€1)", price: 1, duration: 8 },
+  { value: "24h", label: "Boost for 24 hours (€2.5)", price: 2.5, duration: 24 },
 ];
 
 export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) {
@@ -64,6 +66,11 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      const selectedBoost = BOOST_OPTIONS.find(opt => opt.value === form.boost);
+      const boostExpiresAt = selectedBoost && selectedBoost.duration > 0 
+        ? new Date(Date.now() + selectedBoost.duration * 60 * 60 * 1000).toISOString()
+        : null;
+
       // Prepare Supabase payload
       const payload = {
         user_id: user.id,
@@ -71,15 +78,24 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
         description: form.description,
         location: form.location ? form.location : null,
         price: String(form.budget),
-        boost_status: form.boost, // Use "boost_status" as defined in table
-        type: "standard", // Required field, use a default value
-        offer: form.title, // Optionally store title as 'offer'
+        boost_status: form.boost,
+        type: "standard",
+        offer: form.title,
         status: "open",
+        is_boosted: selectedBoost ? selectedBoost.duration > 0 : false,
+        boost_duration: selectedBoost ? selectedBoost.duration : 0,
+        boost_amount: selectedBoost ? selectedBoost.price : 0,
+        boost_expires_at: boostExpiresAt,
       };
 
       const { error } = await supabase.from("Tasks").insert([payload]);
       if (error) throw error;
-      toast({ title: "Task posted!", description: "Your task is now live." });
+      
+      const boostMessage = selectedBoost && selectedBoost.price > 0 
+        ? ` Your task has been boosted for ${selectedBoost.duration} hours!`
+        : "";
+
+      toast({ title: `Task posted!${boostMessage}`, description: "Your task is now live." });
       if (onDone) onDone();
     } catch (e: any) {
       toast({ title: "Failed to post", description: e.message, variant: "destructive" });
@@ -87,6 +103,8 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
       setPosting(false);
     }
   }
+
+  const selectedBoost = BOOST_OPTIONS.find(opt => opt.value === form.boost);
 
   return (
     <div className="max-w-lg w-full mx-auto bg-white border rounded-xl shadow-md p-6 flex flex-col gap-5">
@@ -167,13 +185,22 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
           <RadioGroup
             value={form.boost}
             onValueChange={val => handleChange("boost", val)}
-            className="flex flex-col gap-2 sm:flex-row items-start sm:items-center"
+            className="flex flex-col gap-2"
             disabled={posting}
           >
             {BOOST_OPTIONS.map(opt => (
-              <div key={opt.value} className="flex items-center gap-1">
+              <div key={opt.value} className="flex items-center gap-2">
                 <RadioGroupItem value={opt.value} id={opt.value} />
-                <label htmlFor={opt.value} className="text-sm ml-1">{opt.label}</label>
+                <label htmlFor={opt.value} className="text-sm flex items-center gap-2">
+                  {opt.label}
+                  {opt.value !== "none" && (
+                    <TaskBoostBadge 
+                      isBoosted={true} 
+                      boostExpiresAt={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()} 
+                      className="ml-1"
+                    />
+                  )}
+                </label>
               </div>
             ))}
           </RadioGroup>
@@ -181,7 +208,7 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
 
         {/* Submit */}
         <Button type="submit" className="mt-4" disabled={posting}>
-          {posting ? "Posting..." : "Post Task"}
+          {posting ? "Posting..." : selectedBoost && selectedBoost.price > 0 ? `Post & Pay €${selectedBoost.price}` : "Post Task"}
         </Button>
       </form>
     </div>
