@@ -5,9 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminRole } from "@/contexts/AdminRoleContext";
 
+type Role = "customer" | "provider" | "admin";
+
 interface RequireRoleProps {
   children: React.ReactNode;
-  allowedRoles: string[];
+  allowedRoles: Role[];
   redirectTo?: string;
 }
 
@@ -28,14 +30,15 @@ export default function RequireRole({ children, allowedRoles, redirectTo = "/" }
           return;
         }
 
-        // If user is admin, allow access to everything
+        // If user is admin, check if current viewing role is allowed
         if (isAdmin) {
-          setHasAccess(true);
+          const hasRequiredRole = allowedRoles.includes(currentRole);
+          setHasAccess(hasRequiredRole);
           setLoading(false);
           return;
         }
 
-        // Check user roles in user_roles table
+        // Check user roles in user_roles table for non-admin users
         const { data: userRoles, error } = await supabase
           .from("user_roles")
           .select("role")
@@ -52,7 +55,7 @@ export default function RequireRole({ children, allowedRoles, redirectTo = "/" }
           return;
         }
 
-        const userRoleList = userRoles?.map(r => r.role) || [];
+        const userRoleList = userRoles?.map(r => r.role as Role) || [];
         const hasRequiredRole = allowedRoles.some(role => userRoleList.includes(role));
 
         if (!hasRequiredRole) {
@@ -78,7 +81,7 @@ export default function RequireRole({ children, allowedRoles, redirectTo = "/" }
     };
 
     checkRole();
-  }, [allowedRoles, navigate, redirectTo, toast, isAdmin]);
+  }, [allowedRoles, navigate, redirectTo, toast, isAdmin, currentRole]);
 
   if (loading) {
     return (

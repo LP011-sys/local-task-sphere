@@ -44,13 +44,6 @@ export default function AppLayout() {
     ...commonLinks
   ];
 
-  // If admin, show additional navigation for all roles
-  const adminNavLinks = isAdmin ? [
-    { path: "/admin", label: "Admin", role: "admin" },
-    { path: "/dashboard", label: "Provider View", role: "provider" },
-    { path: "/post-task", label: "Customer View", role: "customer" },
-  ] : [];
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-slate-100">
       <header className="sticky top-0 z-40 w-full border-b bg-white/90 backdrop-blur shadow-sm">
@@ -82,15 +75,14 @@ export default function AppLayout() {
                 {link.label}
               </NavLink>
             ))}
+          </div>
+
+          {/* Right side controls */}
+          <div className="flex items-center gap-3">
+            {/* Admin Role Switcher - always visible when admin */}
+            <AdminRoleSwitcher />
             
-            {/* Admin Role Switcher */}
-            {isAdmin && (
-              <div className="ml-4 flex items-center gap-2">
-                <AdminRoleSwitcher />
-              </div>
-            )}
-            
-            <div className="ml-4">
+            <div className="hidden md:block">
               <EnhancedLanguagePicker compact showLabel={false} />
             </div>
           </div>
@@ -113,7 +105,9 @@ export default function AppLayout() {
                 {link.label}
               </NavLink>
             ))}
-            <EnhancedLanguagePicker compact showLabel={false} />
+            <div className="md:hidden">
+              <EnhancedLanguagePicker compact showLabel={false} />
+            </div>
           </div>
         </nav>
       </header>

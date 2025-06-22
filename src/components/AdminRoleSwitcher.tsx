@@ -19,14 +19,22 @@ export default function AdminRoleSwitcher() {
     provider: <Wrench size={16} />
   };
 
+  const roleColors = {
+    admin: "bg-purple-100 text-purple-800 border-purple-200",
+    customer: "bg-blue-100 text-blue-800 border-blue-200", 
+    provider: "bg-green-100 text-green-800 border-green-200"
+  };
+
   return (
     <div className="flex items-center gap-2">
-      <Badge variant="outline" className="flex items-center gap-1">
+      <Badge variant="outline" className={`flex items-center gap-1 px-3 py-1 ${roleColors[currentRole]}`}>
         {roleIcons[currentRole]}
-        <span className="text-xs">Viewing as {t(currentRole)}</span>
+        <span className="text-xs font-medium">
+          Viewing as {currentRole.charAt(0).toUpperCase() + currentRole.slice(1)}
+        </span>
       </Badge>
       
-      <Select value={currentRole} onValueChange={(value) => switchRole(value as any)}>
+      <Select value={currentRole} onValueChange={(value: "admin" | "customer" | "provider") => switchRole(value)}>
         <SelectTrigger className="w-32 h-8">
           <SelectValue />
         </SelectTrigger>
@@ -34,19 +42,19 @@ export default function AdminRoleSwitcher() {
           <SelectItem value="admin">
             <div className="flex items-center gap-2">
               <Crown size={14} />
-              {t("admin")}
+              Admin
             </div>
           </SelectItem>
           <SelectItem value="customer">
             <div className="flex items-center gap-2">
               <User size={14} />
-              {t("customer")}
+              Customer
             </div>
           </SelectItem>
           <SelectItem value="provider">
             <div className="flex items-center gap-2">
               <Wrench size={14} />
-              {t("provider")}
+              Provider
             </div>
           </SelectItem>
         </SelectContent>
@@ -56,7 +64,7 @@ export default function AdminRoleSwitcher() {
         variant="ghost"
         size="sm"
         onClick={resetRole}
-        className="text-xs"
+        className="text-xs h-8"
       >
         Reset
       </Button>
