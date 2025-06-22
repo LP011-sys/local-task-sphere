@@ -65,7 +65,7 @@ export function detectLanguage(text: string): string {
   const lowerText = text.toLowerCase();
   
   // Serbian detection (Cyrillic or common Serbian words)
-  if (/[а-ђж-љњ-шћџ]/.test(lowerText) || 
+  if (/[а-шђчћжџ]/.test(lowerText) || 
       lowerText.includes('zdravo') || 
       lowerText.includes('kako') || 
       lowerText.includes('hvala') ||
