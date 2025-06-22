@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import type { Json } from "@/integrations/supabase/types";
 
 export interface SubscriptionPlan {
   id: string;
@@ -35,7 +36,16 @@ export function useSubscriptionPlans() {
         .order("price_monthly", { ascending: true });
       
       if (error) throw error;
-      return data || [];
+      
+      // Transform the data to match our interface
+      return (data || []).map(plan => ({
+        ...plan,
+        features: Array.isArray(plan.features) 
+          ? plan.features as string[]
+          : typeof plan.features === 'string'
+          ? JSON.parse(plan.features)
+          : []
+      }));
     },
   });
 }
@@ -53,6 +63,15 @@ export function useUserSubscription(userId: string | undefined) {
         .single();
       
       if (error && error.code !== 'PGRST116') throw error;
+      
+      // Transform the data to match our interface
+      if (data) {
+        return {
+          ...data,
+          status: data.status as 'active' | 'canceled' | 'past_due' | 'incomplete' | 'trialing'
+        };
+      }
+      
       return data;
     },
     enabled: !!userId,
@@ -61,7 +80,6 @@ export function useUserSubscription(userId: string | undefined) {
 
 export function useCreateSubscription() {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (planId: string) => {

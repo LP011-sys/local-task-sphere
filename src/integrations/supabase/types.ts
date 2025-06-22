@@ -15,6 +15,7 @@ export type Database = {
           bio: string | null
           completed_tasks: number | null
           created_at: string | null
+          credit_balance: number | null
           email: string
           id: string
           is_verified: boolean | null
@@ -26,6 +27,8 @@ export type Database = {
           preferred_language: string
           profile_photo: string | null
           rating: number | null
+          referral_code: string | null
+          referred_by: string | null
           role: Database["public"]["Enums"]["user_role"]
           subscription_plan: string | null
           updated_at: string | null
@@ -36,6 +39,7 @@ export type Database = {
           bio?: string | null
           completed_tasks?: number | null
           created_at?: string | null
+          credit_balance?: number | null
           email: string
           id?: string
           is_verified?: boolean | null
@@ -47,6 +51,8 @@ export type Database = {
           preferred_language?: string
           profile_photo?: string | null
           rating?: number | null
+          referral_code?: string | null
+          referred_by?: string | null
           role: Database["public"]["Enums"]["user_role"]
           subscription_plan?: string | null
           updated_at?: string | null
@@ -57,6 +63,7 @@ export type Database = {
           bio?: string | null
           completed_tasks?: number | null
           created_at?: string | null
+          credit_balance?: number | null
           email?: string
           id?: string
           is_verified?: boolean | null
@@ -68,12 +75,70 @@ export type Database = {
           preferred_language?: string
           profile_photo?: string | null
           rating?: number | null
+          referral_code?: string | null
+          referred_by?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           subscription_plan?: string | null
           updated_at?: string | null
           verification_status?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "app_users_referred_by_fkey"
+            columns: ["referred_by"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credits_history: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string | null
+          id: string
+          referral_id: string | null
+          task_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          referral_id?: string | null
+          task_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          referral_id?: string | null
+          task_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credits_history_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credits_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       favorites: {
         Row: {
@@ -316,6 +381,54 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "Tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referrals: {
+        Row: {
+          created_at: string | null
+          credit_awarded: boolean | null
+          credit_awarded_at: string | null
+          first_task_completed_at: string | null
+          id: string
+          referral_code: string
+          referred_id: string
+          referrer_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          credit_awarded?: boolean | null
+          credit_awarded_at?: string | null
+          first_task_completed_at?: string | null
+          id?: string
+          referral_code: string
+          referred_id: string
+          referrer_id: string
+        }
+        Update: {
+          created_at?: string | null
+          credit_awarded?: boolean | null
+          credit_awarded_at?: string | null
+          first_task_completed_at?: string | null
+          id?: string
+          referral_code?: string
+          referred_id?: string
+          referrer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_referred_id_fkey"
+            columns: ["referred_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
             referencedColumns: ["id"]
           },
         ]
@@ -763,6 +876,10 @@ export type Database = {
             }
         Returns: string
       }
+      award_referral_credits: {
+        Args: { referred_user_id: string }
+        Returns: undefined
+      }
       box: {
         Args: { "": unknown } | { "": unknown }
         Returns: unknown
@@ -837,6 +954,10 @@ export type Database = {
       equals: {
         Args: { geom1: unknown; geom2: unknown }
         Returns: boolean
+      }
+      generate_referral_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       geography: {
         Args: { "": string } | { "": unknown }
