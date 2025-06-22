@@ -57,7 +57,12 @@ export function useCreditHistory(userId: string | undefined) {
         .order("created_at", { ascending: false });
       
       if (error) throw error;
-      return data || [];
+      
+      // Transform the data to match our interface
+      return (data || []).map(item => ({
+        ...item,
+        type: item.type as 'referral_bonus' | 'referral_reward' | 'task_payment' | 'bonus'
+      }));
     },
     enabled: !!userId,
   });

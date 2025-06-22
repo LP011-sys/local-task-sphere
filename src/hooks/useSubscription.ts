@@ -68,11 +68,11 @@ export function useUserSubscription(userId: string | undefined) {
       if (data) {
         return {
           ...data,
-          status: data.status as 'active' | 'canceled' | 'past_due' | 'incomplete' | 'trialing'
+          status: (data.status as 'active' | 'canceled' | 'past_due' | 'incomplete' | 'trialing') || 'incomplete'
         };
       }
       
-      return data;
+      return null;
     },
     enabled: !!userId,
   });

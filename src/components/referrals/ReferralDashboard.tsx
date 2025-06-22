@@ -44,9 +44,11 @@ export default function ReferralDashboard({ userId }: ReferralDashboardProps) {
     }
   };
 
-  const totalEarned = creditHistory
-    .filter(credit => credit.type === 'referral_bonus')
-    .reduce((sum, credit) => sum + credit.amount, 0);
+  const totalEarned = Array.isArray(creditHistory) 
+    ? creditHistory
+        .filter(credit => credit.type === 'referral_bonus')
+        .reduce((sum, credit) => sum + credit.amount, 0)
+    : 0;
 
   return (
     <div className="space-y-6">
