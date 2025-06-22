@@ -3,11 +3,13 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Rocket } from "lucide-react";
 import { VerifiedBadge } from "@/components/ui/verified-badge";
+import { SubscriptionBadge } from "@/components/ui/subscription-badge";
 
 interface TaskBoostBadgeProps {
   isBoosted: boolean;
   boostExpiresAt?: string | null;
   isProviderVerified?: boolean;
+  providerSubscriptionPlan?: string | null;
   className?: string;
 }
 
@@ -15,6 +17,7 @@ export default function TaskBoostBadge({
   isBoosted, 
   boostExpiresAt, 
   isProviderVerified,
+  providerSubscriptionPlan,
   className = "" 
 }: TaskBoostBadgeProps) {
   // Check if boost is still active
@@ -32,6 +35,7 @@ export default function TaskBoostBadge({
         </Badge>
       )}
       <VerifiedBadge isVerified={isProviderVerified || false} showText={false} />
+      <SubscriptionBadge planId={providerSubscriptionPlan} />
     </div>
   );
 }

@@ -1,104 +1,70 @@
-
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Crown, Star, Zap, Shield, Check } from "lucide-react";
+import { Crown, Star, Zap, Shield, Check, Settings } from "lucide-react";
+import { useSubscriptionPlans, useUserSubscription, useCreateSubscription, useCustomerPortal } from "@/hooks/useSubscription";
+import { useCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
-type Package = {
-  id: string;
-  name: string;
-  price: number;
-  period: string;
-  description: string;
-  features: string[];
-  popular?: boolean;
-  icon: React.ReactNode;
-  color: string;
+const planIcons = {
+  starter: <Star className="text-blue-500" size={24} />,
+  pro: <Crown className="text-yellow-500" size={24} />,
+  team: <Shield className="text-purple-500" size={24} />
 };
 
-const packages: Package[] = [
-  {
-    id: "basic",
-    name: "Basic",
-    price: 9.99,
-    period: "month",
-    description: "Perfect for occasional task posting",
-    features: [
-      "Post up to 5 tasks per month",
-      "Basic customer support",
-      "Standard task visibility",
-      "Access to all categories"
-    ],
-    icon: <Star className="text-blue-500" size={24} />,
-    color: "border-blue-200"
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    price: 19.99,
-    period: "month",
-    description: "Great for regular users and small businesses",
-    features: [
-      "Unlimited task posting",
-      "Priority customer support",
-      "Enhanced task visibility",
-      "Advanced filtering options",
-      "Task analytics dashboard",
-      "Custom task templates"
-    ],
-    popular: true,
-    icon: <Crown className="text-yellow-500" size={24} />,
-    color: "border-yellow-300"
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    price: 49.99,
-    period: "month",
-    description: "For businesses with high-volume needs",
-    features: [
-      "Everything in Pro",
-      "Dedicated account manager",
-      "Custom integrations",
-      "Advanced reporting",
-      "Team collaboration tools",
-      "SLA guarantees",
-      "White-label options"
-    ],
-    icon: <Shield className="text-purple-500" size={24} />,
-    color: "border-purple-200"
-  }
-];
+const planColors = {
+  starter: "border-blue-200",
+  pro: "border-yellow-300", 
+  team: "border-purple-200"
+};
 
 export default function PremiumPackages() {
-  const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-
-  const handleSubscribe = async (packageId: string) => {
-    setLoading(true);
-    setSelectedPackage(packageId);
-    
-    try {
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      toast({ 
-        title: "Subscription successful!", 
-        description: `You've successfully subscribed to the ${packages.find(p => p.id === packageId)?.name} plan.`
-      });
-    } catch (error) {
-      toast({ 
-        title: "Subscription failed", 
-        description: "Please try again later.",
-        variant: "destructive" 
-      });
-    } finally {
-      setLoading(false);
-      setSelectedPackage(null);
+  const { data: plans, isLoading: plansLoading } = useSubscriptionPlans();
+  
+  // Get current user
+  const { data: { user } } = useQuery({
+    queryKey: ['auth-user'],
+    queryFn: async () => {
+      const { data } = await supabase.auth.getUser();
+      return data;
     }
+  });
+
+  const { data: userProfile } = useCurrentUserProfile(user?.id);
+  const { data: userSubscription } = useUserSubscription(user?.id);
+  const createSubscription = useCreateSubscription();
+  const customerPortal = useCustomerPortal();
+
+  const handleSubscribe = async (planId: string) => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to subscribe to a plan",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    createSubscription.mutate(planId);
   };
+
+  const handleManageSubscription = () => {
+    customerPortal.mutate();
+  };
+
+  const hasActiveSubscription = userSubscription?.status === 'active';
+  const currentPlanId = userSubscription?.plan_id;
+
+  if (plansLoading) {
+    return (
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+        <div className="text-center">Loading subscription plans...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
@@ -111,61 +77,92 @@ export default function PremiumPackages() {
           Unlock the full potential of Task Hub with our premium plans. 
           Get more visibility, advanced features, and priority support.
         </p>
+        
+        {hasActiveSubscription && (
+          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-green-800 font-medium">
+              You have an active {plans?.find(p => p.id === currentPlanId)?.name} subscription
+            </p>
+            <Button 
+              onClick={handleManageSubscription}
+              variant="outline" 
+              size="sm"
+              className="mt-2"
+              disabled={customerPortal.isPending}
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              {customerPortal.isPending ? 'Loading...' : 'Manage Subscription'}
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {packages.map((pkg) => (
-          <div
-            key={pkg.id}
-            className={`bg-white rounded-xl shadow-md border-2 ${pkg.color} ${
-              pkg.popular ? "ring-2 ring-yellow-400 ring-offset-2" : ""
-            } relative overflow-hidden`}
-          >
-            {pkg.popular && (
-              <div className="absolute top-0 right-0 bg-yellow-400 text-yellow-900 px-3 py-1 text-xs font-bold rounded-bl-lg">
-                Most Popular
-              </div>
-            )}
-            
-            <div className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                {pkg.icon}
-                <div>
-                  <h3 className="text-xl font-bold">{pkg.name}</h3>
-                  <p className="text-xs text-muted-foreground">{pkg.description}</p>
+        {plans?.map((plan) => {
+          const isCurrentPlan = plan.id === currentPlanId;
+          const features = Array.isArray(plan.features) ? plan.features : [];
+          
+          return (
+            <div
+              key={plan.id}
+              className={`bg-white rounded-xl shadow-md border-2 ${planColors[plan.id as keyof typeof planColors]} ${
+                plan.id === 'pro' ? "ring-2 ring-yellow-400 ring-offset-2" : ""
+              } relative overflow-hidden`}
+            >
+              {plan.id === 'pro' && (
+                <div className="absolute top-0 right-0 bg-yellow-400 text-yellow-900 px-3 py-1 text-xs font-bold rounded-bl-lg">
+                  Most Popular
                 </div>
-              </div>
-
-              <div className="mb-6">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-bold">€{pkg.price}</span>
-                  <span className="text-muted-foreground">/{pkg.period}</span>
+              )}
+              
+              {isCurrentPlan && (
+                <div className="absolute top-0 left-0 bg-green-500 text-white px-3 py-1 text-xs font-bold rounded-br-lg">
+                  Current Plan
                 </div>
+              )}
+              
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  {planIcons[plan.id as keyof typeof planIcons]}
+                  <div>
+                    <h3 className="text-xl font-bold">{plan.name}</h3>
+                    <p className="text-xs text-muted-foreground">Perfect for growing businesses</p>
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-bold">€{plan.price_monthly}</span>
+                    <span className="text-muted-foreground">/month</span>
+                  </div>
+                </div>
+
+                <ul className="space-y-3 mb-6">
+                  {features.map((feature, index) => (
+                    <li key={index} className="flex items-start gap-2 text-sm">
+                      <Check className="text-green-500 flex-shrink-0 mt-0.5" size={16} />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Button
+                  onClick={() => handleSubscribe(plan.id)}
+                  disabled={createSubscription.isPending || isCurrentPlan || !user}
+                  className={`w-full min-w-[120px] ${
+                    plan.id === 'pro' 
+                      ? "bg-yellow-500 text-white hover:bg-yellow-600" 
+                      : "bg-primary text-white hover:bg-primary/90"
+                  } px-4 py-2 rounded-md`}
+                >
+                  {createSubscription.isPending ? "Processing..." : 
+                   isCurrentPlan ? "Current Plan" :
+                   !user ? "Sign In Required" : "Subscribe Now"}
+                </Button>
               </div>
-
-              <ul className="space-y-3 mb-6">
-                {pkg.features.map((feature, index) => (
-                  <li key={index} className="flex items-start gap-2 text-sm">
-                    <Check className="text-green-500 flex-shrink-0 mt-0.5" size={16} />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <Button
-                onClick={() => handleSubscribe(pkg.id)}
-                disabled={loading}
-                className={`w-full min-w-[120px] ${
-                  pkg.popular 
-                    ? "bg-yellow-500 text-white hover:bg-yellow-600" 
-                    : "bg-primary text-white hover:bg-primary/90"
-                } px-4 py-2 rounded-md`}
-              >
-                {loading && selectedPackage === pkg.id ? "Processing..." : "Subscribe Now"}
-              </Button>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="bg-white rounded-xl shadow-md p-6 border">
