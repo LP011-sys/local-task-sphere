@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,8 +25,8 @@ export default function PremiumPackages() {
   const { toast } = useToast();
   const { data: plans, isLoading: plansLoading } = useSubscriptionPlans();
   
-  // Get current user
-  const { data: { user } } = useQuery({
+  // Get current user - fix the destructuring to handle undefined query result
+  const { data: authData } = useQuery({
     queryKey: ['auth-user'],
     queryFn: async () => {
       const { data } = await supabase.auth.getUser();
@@ -33,6 +34,7 @@ export default function PremiumPackages() {
     }
   });
 
+  const user = authData?.user;
   const { data: userProfile } = useCurrentUserProfile(user?.id);
   const { data: userSubscription } = useUserSubscription(user?.id);
   const createSubscription = useCreateSubscription();
