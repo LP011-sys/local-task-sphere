@@ -21,6 +21,7 @@ export type Database = {
           is_verified: boolean | null
           language: string | null
           location: unknown | null
+          loyalty_tier: string | null
           name: string
           notification_preferences: Json | null
           phone: string | null
@@ -31,6 +32,7 @@ export type Database = {
           referred_by: string | null
           role: Database["public"]["Enums"]["user_role"]
           subscription_plan: string | null
+          tasks_completed: number | null
           updated_at: string | null
           verification_status: string | null
         }
@@ -45,6 +47,7 @@ export type Database = {
           is_verified?: boolean | null
           language?: string | null
           location?: unknown | null
+          loyalty_tier?: string | null
           name: string
           notification_preferences?: Json | null
           phone?: string | null
@@ -55,6 +58,7 @@ export type Database = {
           referred_by?: string | null
           role: Database["public"]["Enums"]["user_role"]
           subscription_plan?: string | null
+          tasks_completed?: number | null
           updated_at?: string | null
           verification_status?: string | null
         }
@@ -69,6 +73,7 @@ export type Database = {
           is_verified?: boolean | null
           language?: string | null
           location?: unknown | null
+          loyalty_tier?: string | null
           name?: string
           notification_preferences?: Json | null
           phone?: string | null
@@ -79,6 +84,7 @@ export type Database = {
           referred_by?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           subscription_plan?: string | null
+          tasks_completed?: number | null
           updated_at?: string | null
           verification_status?: string | null
         }
@@ -1205,6 +1211,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
         }
         Returns: boolean
+      }
+      increment_user_completed_tasks: {
+        Args: { user_uuid: string }
+        Returns: undefined
       }
       json: {
         Args: { "": unknown }

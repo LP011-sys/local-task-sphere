@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,11 +6,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { VerifiedBadge } from "@/components/ui/verified-badge";
+import { LoyaltyBadge } from "@/components/ui/loyalty-badge";
 import { useCurrentUserProfile, useUpdateCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
 import { useVerificationPayment } from "@/hooks/useVerificationPayment";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle, Shield } from "lucide-react";
+import { CheckCircle, Shield, Trophy } from "lucide-react";
 
 export default function ProfileSettings() {
   const { toast } = useToast();
@@ -104,9 +104,48 @@ export default function ProfileSettings() {
     );
   }
 
+  const loyaltyTier = profile?.loyalty_tier || 'Bronze';
+  const tasksCompleted = profile?.tasks_completed || 0;
+
   return (
     <div className="max-w-2xl mx-auto p-4">
       <h1 className="text-2xl font-bold mb-6">Profile Settings</h1>
+
+      {/* Loyalty Tier Card */}
+      <Card className="p-6 mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Trophy className="w-6 h-6 text-amber-600" />
+            <div>
+              <h3 className="text-lg font-semibold">Loyalty Status</h3>
+              <p className="text-sm text-gray-600">
+                Complete tasks to unlock higher tiers and benefits
+              </p>
+            </div>
+          </div>
+          
+          <LoyaltyBadge 
+            tier={loyaltyTier as 'Bronze' | 'Silver' | 'Gold'} 
+            tasksCompleted={tasksCompleted}
+          />
+        </div>
+        
+        <div className="mt-4 p-3 bg-amber-50 rounded-lg">
+          <p className="text-sm text-amber-800">
+            <strong>Tasks Completed:</strong> {tasksCompleted}<br />
+            <strong>Current Tier:</strong> {loyaltyTier}<br />
+            {loyaltyTier === 'Bronze' && tasksCompleted < 5 && (
+              <>Complete {5 - tasksCompleted} more tasks to reach Silver tier</>
+            )}
+            {loyaltyTier === 'Silver' && tasksCompleted < 15 && (
+              <>Complete {15 - tasksCompleted} more tasks to reach Gold tier</>
+            )}
+            {loyaltyTier === 'Gold' && (
+              <>🎉 You've reached the highest tier! Enjoy reduced platform fees.</>
+            )}
+          </p>
+        </div>
+      </Card>
 
       {/* Verification Card - only show for providers */}
       {profile?.role === 'provider' && (
@@ -155,6 +194,7 @@ export default function ProfileSettings() {
 
       <Card className="p-6">
         <form onSubmit={handleSubmit} className="space-y-4">
+          
           <div className="space-y-2">
             <Label htmlFor="name">Full Name</Label>
             <Input

@@ -4,12 +4,15 @@ import { Badge } from "@/components/ui/badge";
 import { Rocket } from "lucide-react";
 import { VerifiedBadge } from "@/components/ui/verified-badge";
 import { SubscriptionBadge } from "@/components/ui/subscription-badge";
+import { LoyaltyBadge } from "@/components/ui/loyalty-badge";
 
 interface TaskBoostBadgeProps {
   isBoosted: boolean;
   boostExpiresAt?: string | null;
   isProviderVerified?: boolean;
   providerSubscriptionPlan?: string | null;
+  providerLoyaltyTier?: 'Bronze' | 'Silver' | 'Gold';
+  providerTasksCompleted?: number;
   className?: string;
 }
 
@@ -18,6 +21,8 @@ export default function TaskBoostBadge({
   boostExpiresAt, 
   isProviderVerified,
   providerSubscriptionPlan,
+  providerLoyaltyTier,
+  providerTasksCompleted,
   className = "" 
 }: TaskBoostBadgeProps) {
   // Check if boost is still active
@@ -36,6 +41,13 @@ export default function TaskBoostBadge({
       )}
       <VerifiedBadge isVerified={isProviderVerified || false} showText={false} />
       <SubscriptionBadge planId={providerSubscriptionPlan} />
+      {providerLoyaltyTier && (
+        <LoyaltyBadge 
+          tier={providerLoyaltyTier} 
+          tasksCompleted={providerTasksCompleted}
+          showText={false}
+        />
+      )}
     </div>
   );
 }
