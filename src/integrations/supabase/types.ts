@@ -9,6 +9,48 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      analytics_snapshots: {
+        Row: {
+          boost_purchases: number
+          created_at: string
+          id: string
+          mau: number
+          snapshot_date: string
+          subscription_count: number
+          tasks_completed: number
+          tasks_posted: number
+          total_revenue: number
+          week_end: string
+          week_start: string
+        }
+        Insert: {
+          boost_purchases?: number
+          created_at?: string
+          id?: string
+          mau?: number
+          snapshot_date: string
+          subscription_count?: number
+          tasks_completed?: number
+          tasks_posted?: number
+          total_revenue?: number
+          week_end: string
+          week_start: string
+        }
+        Update: {
+          boost_purchases?: number
+          created_at?: string
+          id?: string
+          mau?: number
+          snapshot_date?: string
+          subscription_count?: number
+          tasks_completed?: number
+          tasks_posted?: number
+          total_revenue?: number
+          week_end?: string
+          week_start?: string
+        }
+        Relationships: []
+      }
       app_users: {
         Row: {
           auth_user_id: string
@@ -989,6 +1031,10 @@ export type Database = {
         Args: { "": unknown } | { "": unknown }
         Returns: string
       }
+      calculate_weekly_analytics: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       disablelongtransactions: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -1247,6 +1293,17 @@ export type Database = {
       geomfromewkt: {
         Args: { "": string }
         Returns: unknown
+      }
+      get_current_analytics: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          mau: number
+          tasks_posted: number
+          tasks_completed: number
+          boost_purchases: number
+          subscription_count: number
+          total_revenue: number
+        }[]
       }
       get_proj4_from_srid: {
         Args: { "": number }
