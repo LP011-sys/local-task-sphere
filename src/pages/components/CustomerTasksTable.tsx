@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Table, TableHeader, TableRow, TableHead, TableCell, TableBody } from '@/components/ui/table";
+import { Table, TableHeader, TableRow, TableHead, TableCell, TableBody } from '@/components/ui/table';
 import { useTasks } from "@/hooks/useTasks";
 import QueryWrapper from "@/components/QueryWrapper";
 import TableSkeleton from "@/components/TableSkeleton";
