@@ -1,7 +1,9 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { NavLink, useLocation, Outlet } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { Menu, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import EnhancedLanguagePicker from "@/components/EnhancedLanguagePicker";
 import AdminRoleSwitcher from "@/components/AdminRoleSwitcher";
 import { useAdminRole } from "@/contexts/AdminRoleContext";
@@ -10,6 +12,7 @@ export default function AppLayout() {
   const location = useLocation();
   const { t } = useTranslation();
   const { currentRole, isAdmin } = useAdminRole();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Base navigation links
   const baseNavLinks = [
@@ -33,8 +36,10 @@ export default function AppLayout() {
 
   // Common links for all authenticated users
   const commonLinks = [
-    { path: "/inbox", label: t("inbox") },
+    { path: "/chat", label: t("chat") },
     { path: "/profile", label: t("profile") },
+    { path: "/referral", label: t("referral") },
+    { path: "/review", label: t("review") },
   ];
 
   // Build navigation based on current role
@@ -43,6 +48,10 @@ export default function AppLayout() {
     ...(roleNavLinks[currentRole] || []),
     ...commonLinks
   ];
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-slate-100">
@@ -58,7 +67,7 @@ export default function AppLayout() {
           </NavLink>
           
           {/* Desktop Navigation */}
-          <div className="hidden md:flex gap-1 items-center">
+          <div className="hidden lg:flex gap-1 items-center">
             {navLinks.map(link => (
               <NavLink
                 key={link.path}
@@ -77,51 +86,62 @@ export default function AppLayout() {
             ))}
           </div>
 
-          {/* Right side controls */}
-          <div className="flex items-center gap-4">
-            {/* Admin Role Switcher - Make it more prominent */}
+          {/* Desktop Right side controls */}
+          <div className="hidden lg:flex items-center gap-4">
+            {/* Admin Role Switcher */}
             {isAdmin && (
               <div className="border-l border-gray-200 pl-4">
                 <AdminRoleSwitcher />
               </div>
             )}
             
-            <div className="hidden md:block">
-              <EnhancedLanguagePicker compact showLabel={false} />
-            </div>
+            <EnhancedLanguagePicker compact showLabel={false} />
           </div>
 
-          {/* Mobile Navigation */}
-          <div className="flex md:hidden gap-1 items-center">
-            {navLinks.slice(0, 3).map(link => (
-              <NavLink
-                key={link.path}
-                to={link.path}
-                className={({ isActive }) =>
-                  `inline-block px-2 py-1 rounded-md transition-all font-medium text-xs hover:bg-accent hover:text-primary ${
-                    isActive 
-                      ? "bg-primary text-primary-foreground shadow-md font-semibold" 
-                      : "text-muted-foreground"
-                  }`
-                }
-                end={link.path === "/"}
-              >
-                {link.label}
-              </NavLink>
-            ))}
-            
-            {/* Mobile Admin Role Switcher */}
-            {isAdmin && (
-              <div className="ml-2">
-                <AdminRoleSwitcher />
-              </div>
-            )}
-            
-            <div className="md:hidden">
-              <EnhancedLanguagePicker compact showLabel={false} />
-            </div>
+          {/* Mobile Menu Button */}
+          <div className="flex lg:hidden items-center gap-2">
+            {isAdmin && <AdminRoleSwitcher />}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleMobileMenu}
+              className="p-2"
+              aria-label="Toggle mobile menu"
+            >
+              {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </Button>
           </div>
         </nav>
+
+        {/* Mobile Navigation Menu */}
+        {isMobileMenuOpen && (
+          <div className="lg:hidden border-t bg-white/95 backdrop-blur">
+            <div className="max-w-7xl mx-auto px-4 py-4 space-y-2">
+              {navLinks.map(link => (
+                <NavLink
+                  key={link.path}
+                  to={link.path}
+                  className={({ isActive }) =>
+                    `block px-4 py-3 rounded-md transition-all font-medium text-sm hover:bg-accent hover:text-primary ${
+                      isActive 
+                        ? "bg-primary text-primary-foreground shadow-md font-semibold" 
+                        : "text-muted-foreground"
+                    }`
+                  }
+                  end={link.path === "/"}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {link.label}
+                </NavLink>
+              ))}
+              
+              {/* Mobile Language Picker */}
+              <div className="pt-4 border-t">
+                <EnhancedLanguagePicker compact={false} showLabel={true} />
+              </div>
+            </div>
+          </div>
+        )}
       </header>
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full">

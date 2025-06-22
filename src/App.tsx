@@ -28,6 +28,7 @@ import Chat from "@/pages/Chat";
 import MyFavorites from "@/pages/MyFavorites";
 import ProfileSettings from "@/pages/ProfileSettings";
 import LeaveReview from "@/pages/LeaveReview";
+import ReferralPage from "@/pages/ReferralPage";
 import RequireAuth from "@/components/auth/RequireAuth";
 import RequireRole from "@/components/auth/RequireRole";
 import { RequireAdmin } from "@/components/auth/RequireAdmin";
@@ -85,7 +86,7 @@ const App = () => (
                   </RequireAuth>
                 } />
                 
-                <Route path="/inbox" element={
+                <Route path="/chat" element={
                   <RequireAuth>
                     <Chat />
                   </RequireAuth>
@@ -94,6 +95,12 @@ const App = () => (
                 <Route path="/review" element={
                   <RequireAuth>
                     <LeaveReview />
+                  </RequireAuth>
+                } />
+
+                <Route path="/referral" element={
+                  <RequireAuth>
+                    <ReferralPage />
                   </RequireAuth>
                 } />
 
@@ -131,6 +138,7 @@ const App = () => (
                   </RequireAuth>
                 } />
 
+                {/* 404 catch-all fallback */}
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>

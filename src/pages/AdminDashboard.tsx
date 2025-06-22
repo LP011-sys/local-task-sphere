@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { RequireAdmin } from "@/components/auth/RequireAdmin";
+import AdminBreadcrumb from "@/components/admin/AdminBreadcrumb";
 import AdminDashboardStats from "@/components/admin/AdminDashboardStats";
 import AdminUsersOverview from "@/components/admin/AdminUsersOverview";
 import AdminTasksOverview from "@/components/admin/AdminTasksOverview";
@@ -22,6 +23,8 @@ export default function AdminDashboard() {
     <RequireAdmin>
       <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-slate-100 flex flex-col items-center p-2 sm:p-4">
         <Card className="w-full max-w-7xl shadow-xl p-2 sm:p-6 rounded-xl space-y-4">
+          <AdminBreadcrumb />
+          
           <h1 className="text-2xl md:text-3xl font-bold mb-2 text-primary text-center">Admin Dashboard</h1>
           
           {/* Tab Navigation */}
