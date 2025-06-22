@@ -25,17 +25,27 @@ export default function AdminRoleSwitcher() {
     provider: "bg-green-100 text-green-800 border-green-200"
   };
 
+  const roleLabels = {
+    admin: "Admin",
+    customer: "Customer", 
+    provider: "Provider"
+  };
+
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3 bg-white/50 rounded-lg p-2 border">
+      <div className="text-xs text-muted-foreground font-medium">
+        Viewing as:
+      </div>
+      
       <Badge variant="outline" className={`flex items-center gap-1 px-3 py-1 ${roleColors[currentRole]}`}>
         {roleIcons[currentRole]}
-        <span className="text-xs font-medium">
-          Viewing as {currentRole.charAt(0).toUpperCase() + currentRole.slice(1)}
+        <span className="text-xs font-semibold">
+          {roleLabels[currentRole]}
         </span>
       </Badge>
       
       <Select value={currentRole} onValueChange={(value: "admin" | "customer" | "provider") => switchRole(value)}>
-        <SelectTrigger className="w-32 h-8">
+        <SelectTrigger className="w-32 h-8 text-xs">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -64,7 +74,7 @@ export default function AdminRoleSwitcher() {
         variant="ghost"
         size="sm"
         onClick={resetRole}
-        className="text-xs h-8"
+        className="text-xs h-8 px-2"
       >
         Reset
       </Button>

@@ -38,14 +38,14 @@ export default function RequireRole({ children, allowedRoles, redirectTo = "/" }
           return;
         }
 
-        // Check user roles in user_roles table for non-admin users
-        const { data: userRoles, error } = await supabase
-          .from("user_roles")
+        // For non-admin users, get their role from app_users table
+        const { data: profile } = await supabase
+          .from("app_users")
           .select("role")
-          .eq("user_id", user.id);
+          .eq("auth_user_id", user.id)
+          .single();
 
-        if (error) {
-          console.error("Error fetching user roles:", error);
+        if (!profile) {
           toast({
             title: "Access Error",
             description: "Unable to verify your permissions",
@@ -55,8 +55,8 @@ export default function RequireRole({ children, allowedRoles, redirectTo = "/" }
           return;
         }
 
-        const userRoleList = userRoles?.map(r => r.role as Role) || [];
-        const hasRequiredRole = allowedRoles.some(role => userRoleList.includes(role));
+        const userRole = profile.role as Role;
+        const hasRequiredRole = allowedRoles.includes(userRole);
 
         if (!hasRequiredRole) {
           toast({
@@ -66,7 +66,7 @@ export default function RequireRole({ children, allowedRoles, redirectTo = "/" }
           });
           
           // Smart redirect based on user role
-          const smartRedirect = userRoleList.includes("provider") ? "/dashboard" : "/";
+          const smartRedirect = userRole === "provider" ? "/dashboard" : "/";
           navigate(smartRedirect, { replace: true });
           return;
         }

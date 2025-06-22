@@ -78,9 +78,13 @@ export default function AppLayout() {
           </div>
 
           {/* Right side controls */}
-          <div className="flex items-center gap-3">
-            {/* Admin Role Switcher - always visible when admin */}
-            <AdminRoleSwitcher />
+          <div className="flex items-center gap-4">
+            {/* Admin Role Switcher - Make it more prominent */}
+            {isAdmin && (
+              <div className="border-l border-gray-200 pl-4">
+                <AdminRoleSwitcher />
+              </div>
+            )}
             
             <div className="hidden md:block">
               <EnhancedLanguagePicker compact showLabel={false} />
@@ -105,6 +109,14 @@ export default function AppLayout() {
                 {link.label}
               </NavLink>
             ))}
+            
+            {/* Mobile Admin Role Switcher */}
+            {isAdmin && (
+              <div className="ml-2">
+                <AdminRoleSwitcher />
+              </div>
+            )}
+            
             <div className="md:hidden">
               <EnhancedLanguagePicker compact showLabel={false} />
             </div>

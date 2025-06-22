@@ -24,36 +24,34 @@ export function AdminRoleProvider({ children }: { children: React.ReactNode }) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Check if user has admin role
-      const { data: adminRole } = await supabase
-        .from("user_roles")
+      console.log("Checking user role for:", user.email);
+
+      // First check if user has admin role
+      const { data: profile } = await supabase
+        .from("app_users")
         .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
+        .eq("auth_user_id", user.id)
         .single();
 
-      if (adminRole) {
+      console.log("User profile:", profile);
+
+      if (profile?.role === "admin") {
         setActualRole("admin");
         setIsAdmin(true);
         // Check if there's a saved viewing role
         const savedRole = localStorage.getItem("admin-viewing-as");
         if (savedRole && ["customer", "provider", "admin"].includes(savedRole)) {
           setCurrentRole(savedRole as Role);
+          console.log("Loaded saved role:", savedRole);
         } else {
           setCurrentRole("admin");
+          console.log("Set default admin role");
         }
-      } else {
-        // Get user's actual role from app_users
-        const { data: profile } = await supabase
-          .from("app_users")
-          .select("role")
-          .eq("auth_user_id", user.id)
-          .single();
-
-        if (profile?.role) {
-          setActualRole(profile.role as Role);
-          setCurrentRole(profile.role as Role);
-        }
+      } else if (profile?.role) {
+        setActualRole(profile.role as Role);
+        setCurrentRole(profile.role as Role);
+        setIsAdmin(false);
+        console.log("Set user role:", profile.role);
       }
     };
 
@@ -62,15 +60,19 @@ export function AdminRoleProvider({ children }: { children: React.ReactNode }) {
 
   const switchRole = (role: Role) => {
     if (!isAdmin) return;
+    console.log("Switching role to:", role);
     setCurrentRole(role);
     localStorage.setItem("admin-viewing-as", role);
   };
 
   const resetRole = () => {
     if (!isAdmin) return;
+    console.log("Resetting role to:", actualRole || "admin");
     setCurrentRole(actualRole || "admin");
     localStorage.removeItem("admin-viewing-as");
   };
+
+  console.log("AdminRoleContext state:", { currentRole, actualRole, isAdmin });
 
   return (
     <AdminRoleContext.Provider value={{
