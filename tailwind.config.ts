@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -26,7 +27,12 @@ export default {
 				foreground: 'hsl(var(--foreground))',
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))'
+					foreground: 'hsl(var(--primary-foreground))',
+					50: '#f0f9ff',
+					100: '#e0f2fe',
+					500: '#0ea5e9',
+					600: '#0284c7',
+					700: '#0369a1',
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
@@ -63,10 +69,33 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				}
 			},
+			fontSize: {
+				'heading-1': ['2.5rem', { lineHeight: '3rem', fontWeight: '700' }],
+				'heading-2': ['2rem', { lineHeight: '2.5rem', fontWeight: '600' }],
+				'heading-3': ['1.5rem', { lineHeight: '2rem', fontWeight: '600' }],
+				'heading-4': ['1.25rem', { lineHeight: '1.75rem', fontWeight: '600' }],
+				'body-lg': ['1.125rem', { lineHeight: '1.75rem' }],
+				'body': ['1rem', { lineHeight: '1.5rem' }],
+				'body-sm': ['0.875rem', { lineHeight: '1.25rem' }],
+				'caption': ['0.75rem', { lineHeight: '1rem' }],
+			},
+			spacing: {
+				'card': '1rem',
+				'card-lg': '1.5rem',
+				'section': '2rem',
+				'section-lg': '3rem',
+			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
-				sm: 'calc(var(--radius) - 4px)'
+				sm: 'calc(var(--radius) - 4px)',
+				'card': '1rem',
+				'card-lg': '1.5rem',
+			},
+			boxShadow: {
+				'card': '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+				'card-hover': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+				'card-lg': '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
 			},
 			keyframes: {
 				'accordion-down': {

@@ -37,92 +37,39 @@ export default function Index() {
 
   return (
     <I18nProvider>
-      <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-slate-100 flex flex-col">
-        <header className="w-full px-6 py-4 flex items-center justify-between bg-white/90 shadow sticky top-0 z-10">
-          <div className="flex items-center gap-3">
-            <span className="font-bold text-3xl text-primary drop-shadow-sm select-none">Task Hub</span>
-          </div>
-          <nav className="flex gap-3">
-            <a
-              href="#tasks"
-              className="font-semibold hover:text-primary/80 transition"
-            >
-              Browse Tasks
-            </a>
-            <a
-              href="#offers"
-              className="font-semibold hover:text-primary/80 transition"
-            >
-              Provider Offers
-            </a>
-            <a
-              href="#favorites"
-              className="font-semibold hover:text-primary/80 transition"
-            >
-              Favorites
-            </a>
-            <a
-              href="/post-task"
-              className="font-semibold hover:text-green-700 transition"
-            >
-              Post a Task
-            </a>
-            <a
-              href="/premium"
-              className="font-semibold hover:text-yellow-600 transition"
-            >
-              Premium
-            </a>
-          </nav>
-          {authed ? (
-            <a
-              href="/profile"
-              className="inline-flex items-center gap-2 rounded-lg px-3 py-2 bg-primary text-primary-foreground font-semibold hover:bg-primary/80 shadow"
-            >
-              Account
-            </a>
-          ) : (
-            <a
-              href="/auth"
-              className="inline-flex items-center gap-2 rounded-lg px-3 py-2 bg-primary text-primary-foreground font-semibold hover:bg-primary/80 shadow"
-            >
-              <LogIn className="w-4 h-4" />
-              Log in / Sign up
-            </a>
-          )}
-        </header>
+      <div className="min-h-screen bg-gradient-to-br from-white via-primary-50 to-slate-100 flex flex-col">
         {/* Hero section always visible */}
         <IndexHero authed={authed} />
+        
         {/* Main content */}
-        <main className="flex-grow w-full max-w-7xl mx-auto px-4 py-5 space-y-16">
+        <main className="flex-grow w-full max-w-7xl mx-auto px-4 py-section space-y-section-lg">
           {/* Task Table */}
           <section id="tasks" className="space-y-2">
-            <h2 className="text-2xl font-bold mb-2 text-blue-900">Latest Tasks</h2>
+            <h2 className="text-heading-2 font-bold mb-2 text-primary-700">Latest Tasks</h2>
             <CustomerTasksTable />
-            <div className="text-right text-sm mt-1">
-              <a href="/dashboard" className="text-primary underline underline-offset-4">View all tasks</a>
+            <div className="text-right text-body-sm mt-1">
+              <a href="/dashboard" className="text-primary underline underline-offset-4 hover:text-primary-600 transition-colors">View all tasks</a>
             </div>
           </section>
+          
           {/* Offers */}
           <section id="offers" className="space-y-2">
-            <h2 className="text-2xl font-bold mb-2 text-blue-900">Provider Offers</h2>
+            <h2 className="text-heading-2 font-bold mb-2 text-primary-700">Provider Offers</h2>
             <CustomerOffersTable />
-            <div className="text-right text-sm mt-1">
-              <a href="/offers" className="text-primary underline underline-offset-4">See more offers</a>
+            <div className="text-right text-body-sm mt-1">
+              <a href="/offers" className="text-primary underline underline-offset-4 hover:text-primary-600 transition-colors">See more offers</a>
             </div>
           </section>
+          
           {/* Favorites */}
           <section id="favorites" className="space-y-2">
-            <h2 className="text-2xl font-bold mb-2 text-blue-900">Popular Favorites</h2>
+            <h2 className="text-heading-2 font-bold mb-2 text-primary-700">Popular Favorites</h2>
             <CustomerFavoritesTable />
-            <div className="text-right text-sm mt-1">
-              <a href="/favorites" className="text-primary underline underline-offset-4">See my favorites</a>
+            <div className="text-right text-body-sm mt-1">
+              <a href="/favorites" className="text-primary underline underline-offset-4 hover:text-primary-600 transition-colors">See my favorites</a>
             </div>
           </section>
         </main>
-        <footer className="border-t py-4 w-full bg-white/80 text-center text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} Task Hub. <a href="https://docs.lovable.dev/" className="underline">About this app</a>
-        </footer>
       </div>
     </I18nProvider>
   );
