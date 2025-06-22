@@ -54,7 +54,11 @@ export default function NotificationSettings() {
         });
         
         const token = JSON.stringify(subscription);
-        const currentTokens = profile?.notification_tokens || [];
+        
+        // Safely handle notification_tokens as JSON
+        const currentTokens = Array.isArray(profile?.notification_tokens) 
+          ? profile.notification_tokens as string[]
+          : [];
         const newTokens = [...currentTokens, token];
         
         updateTokens.mutate({ userId: userId!, tokens: newTokens });
@@ -84,6 +88,11 @@ export default function NotificationSettings() {
       </Card>
     );
   }
+
+  // Safely get token count
+  const tokenCount = Array.isArray(profile.notification_tokens) 
+    ? (profile.notification_tokens as string[]).length 
+    : 0;
 
   return (
     <Card>
@@ -125,7 +134,7 @@ export default function NotificationSettings() {
             <div>
               <p className="font-medium">Push Notification Tokens</p>
               <p className="text-sm text-muted-foreground">
-                {profile.notification_tokens?.length || 0} device(s) registered
+                {tokenCount} device(s) registered
               </p>
             </div>
             <Button
