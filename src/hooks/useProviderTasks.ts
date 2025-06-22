@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 /**
  * Fetches provider-viewable tasks (status "open", or optionally filter).
  * Now includes real-time updates for task changes and sorts by boost status.
+ * Also includes provider verification status for displaying badges.
  * @param opts Optional: { userId, status }
  */
 export function useProviderTasks(userId?: string, status: string = "open") {
@@ -16,7 +17,14 @@ export function useProviderTasks(userId?: string, status: string = "open") {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("Tasks")
-        .select("*")
+        .select(`
+          *,
+          provider:app_users!Tasks_user_id_fkey(
+            id,
+            name,
+            is_verified
+          )
+        `)
         .eq("status", status)
         .order("is_boosted", { ascending: false })
         .order("deadline", { ascending: true })
