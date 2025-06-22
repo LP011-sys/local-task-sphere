@@ -48,9 +48,12 @@ export default function Header({ navLinks }: HeaderProps) {
               }
               end={link.path === "/"}
               role="menuitem"
-              aria-current={({ isActive }) => isActive ? 'page' : undefined}
             >
-              {link.label}
+              {({ isActive }) => (
+                <span aria-current={isActive ? 'page' : undefined}>
+                  {link.label}
+                </span>
+              )}
             </NavLink>
           ))}
         </div>
@@ -111,9 +114,12 @@ export default function Header({ navLinks }: HeaderProps) {
                 end={link.path === "/"}
                 onClick={() => setIsMobileMenuOpen(false)}
                 role="menuitem"
-                aria-current={({ isActive }) => isActive ? 'page' : undefined}
               >
-                {link.label}
+                {({ isActive }) => (
+                  <span aria-current={isActive ? 'page' : undefined}>
+                    {link.label}
+                  </span>
+                )}
               </NavLink>
             ))}
             
