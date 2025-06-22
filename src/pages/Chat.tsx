@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useChatMessages, useSendMessage } from "@/hooks/useChatMessages";
 import { useCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
 import { ChatMessageBubble } from "@/components/ChatMessageBubble";
@@ -16,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 export default function Chat() {
   const { taskId } = useParams<{ taskId: string }>();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [message, setMessage] = useState("");
   const [receiverId, setReceiverId] = useState<string>("");
   const [translationEnabled, setTranslationEnabled] = useState(true);
@@ -125,7 +127,7 @@ export default function Chat() {
     } catch (error) {
       console.error("Error sending message:", error);
       toast({
-        title: "Error",
+        title: t("error"),
         description: "Failed to send message. Please try again.",
         variant: "destructive",
       });
@@ -144,7 +146,7 @@ export default function Chat() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading messages...</div>
+        <div className="text-gray-500">{t("loading")}</div>
       </div>
     );
   }

@@ -1,17 +1,20 @@
 
 import React from "react";
 import { NavLink, useLocation, Outlet } from "react-router-dom";
-
-const navLinks = [
-  { path: "/", label: "Home" },
-  { path: "/post-task", label: "Post Task" },
-  { path: "/inbox", label: "Inbox" },
-  { path: "/favorites", label: "Favorites" },
-  { path: "/profile", label: "Profile" },
-];
+import { useTranslation } from "react-i18next";
+import EnhancedLanguagePicker from "@/components/EnhancedLanguagePicker";
 
 export default function AppLayout() {
   const location = useLocation();
+  const { t } = useTranslation();
+
+  const navLinks = [
+    { path: "/", label: t("home") },
+    { path: "/post-task", label: t("postTask") },
+    { path: "/inbox", label: t("inbox") },
+    { path: "/favorites", label: t("favorites") },
+    { path: "/profile", label: t("profile") },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-slate-100">
@@ -21,13 +24,13 @@ export default function AppLayout() {
           <NavLink
             to="/"
             className="flex items-center gap-2 font-bold text-2xl tracking-tight text-primary hover:text-primary/80 focus:outline-none transition-colors"
-            aria-label="Task Hub Home"
+            aria-label={t("appName")}
           >
-            Task Hub
+            {t("appName")}
           </NavLink>
           
           {/* Desktop Navigation */}
-          <div className="hidden md:flex gap-1">
+          <div className="hidden md:flex gap-1 items-center">
             {navLinks.map(link => (
               <NavLink
                 key={link.path}
@@ -44,10 +47,13 @@ export default function AppLayout() {
                 {link.label}
               </NavLink>
             ))}
+            <div className="ml-4">
+              <EnhancedLanguagePicker compact showLabel={false} />
+            </div>
           </div>
 
           {/* Mobile Navigation */}
-          <div className="flex md:hidden gap-1">
+          <div className="flex md:hidden gap-1 items-center">
             {navLinks.slice(0, 3).map(link => (
               <NavLink
                 key={link.path}
@@ -64,6 +70,7 @@ export default function AppLayout() {
                 {link.label}
               </NavLink>
             ))}
+            <EnhancedLanguagePicker compact showLabel={false} />
           </div>
         </nav>
       </header>

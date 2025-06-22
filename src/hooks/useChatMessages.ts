@@ -1,8 +1,7 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { translateText, detectLanguage } from "@/utils/translateMessage";
+import { translateText, detectLanguage } from "@/utils/enhancedTranslateMessage";
 
 export type Message = {
   id: string;
@@ -85,7 +84,7 @@ export function useSendMessage() {
       let translatedText = content;
       let translatedTo = null;
       
-      // Translate if languages are different
+      // Translate if languages are different and receiver language is specified
       if (receiverLanguage && sourceLanguage !== receiverLanguage) {
         translatedText = await translateText(content, receiverLanguage, sourceLanguage);
         translatedTo = receiverLanguage;

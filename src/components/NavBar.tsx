@@ -1,34 +1,10 @@
+
 import React from "react";
-import { useI18n } from "@/contexts/I18nContext";
-import LanguagePicker from "./LanguagePicker";
+import { useTranslation } from "react-i18next";
+import EnhancedLanguagePicker from "./EnhancedLanguagePicker";
 import { roles } from "./RoleSelector";
 import { User, List, Settings, FileText, Folder, Users, MessageSquare, FolderPlus, DollarSign, FilePlus, CircleUserRound } from "lucide-react";
-
-// Locally define TranslationKey to match I18nContext.tsx
-type TranslationKey =
-  | "customer"
-  | "provider"
-  | "admin"
-  | "dashboard"
-  | "postTask"
-  | "myTasks"
-  | "offers"
-  | "messages"
-  | "profile"
-  | "settings"
-  | "taskFeed"
-  | "myOffers"
-  | "acceptedTasks"
-  | "earnings"
-  | "userManager"
-  | "taskOversight"
-  | "disputes"
-  | "reports"
-  | "broadcasts"
-  | "categoryManager"
-  | "selectRole"
-  | "appName"
-  | "language";
+import NotificationBell from "./NotificationBell";
 
 type Role = "customer" | "provider" | "admin";
 
@@ -39,8 +15,7 @@ interface NavBarProps {
   onRoleChange: (role: Role) => void;
 }
 
-// Re-type menuConfig and ensure the keys are valid
-const menuConfig: Record<Role, { key: string; labelKey: TranslationKey; icon: React.ReactNode }[]> = {
+const menuConfig: Record<Role, { key: string; labelKey: string; icon: React.ReactNode }[]> = {
   customer: [
     { key: "dashboard", labelKey: "dashboard", icon: <List size={20} /> },
     { key: "post-task", labelKey: "postTask", icon: <FilePlus size={20} /> },
@@ -68,11 +43,9 @@ const menuConfig: Record<Role, { key: string; labelKey: TranslationKey; icon: Re
     { key: "category-manager", labelKey: "categoryManager", icon: <FolderPlus size={20} /> },
   ]
 };
-import NotificationBell from "./NotificationBell";
 
 export default function NavBar({ role, activeTab, onTabChange, onRoleChange }: NavBarProps) {
-  const { t } = useI18n();
-  // You should get the current user's ID, here it's left as undefined for demo. Replace with real user logic as needed.
+  const { t } = useTranslation();
   const userId = undefined; // TODO: Replace with real user ID from context or auth
 
   return (
@@ -96,7 +69,7 @@ export default function NavBar({ role, activeTab, onTabChange, onRoleChange }: N
         <div className="flex items-center gap-3">
           <NotificationBell userId={userId} />
           <div className="hidden md:flex gap-2">
-            <LanguagePicker />
+            <EnhancedLanguagePicker compact />
           </div>
           <div className="flex gap-2">
             <select
@@ -104,9 +77,8 @@ export default function NavBar({ role, activeTab, onTabChange, onRoleChange }: N
               onChange={e => onRoleChange(e.target.value as Role)}
               value={role}
             >
-              {/* For roles, ensure the type matches TranslationKey */}
               {roles.map(r => (
-                <option key={r.role} value={r.role}>{t(r.role as TranslationKey)}</option>
+                <option key={r.role} value={r.role}>{t(r.role)}</option>
               ))}
             </select>
           </div>
