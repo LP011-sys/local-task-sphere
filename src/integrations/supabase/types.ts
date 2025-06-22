@@ -17,6 +17,7 @@ export type Database = {
           created_at: string | null
           credit_balance: number | null
           email: string
+          email_notifications_enabled: boolean | null
           id: string
           is_verified: boolean | null
           language: string | null
@@ -24,9 +25,11 @@ export type Database = {
           loyalty_tier: string | null
           name: string
           notification_preferences: Json | null
+          notification_tokens: Json | null
           phone: string | null
           preferred_language: string
           profile_photo: string | null
+          push_notifications_enabled: boolean | null
           rating: number | null
           referral_code: string | null
           referred_by: string | null
@@ -43,6 +46,7 @@ export type Database = {
           created_at?: string | null
           credit_balance?: number | null
           email: string
+          email_notifications_enabled?: boolean | null
           id?: string
           is_verified?: boolean | null
           language?: string | null
@@ -50,9 +54,11 @@ export type Database = {
           loyalty_tier?: string | null
           name: string
           notification_preferences?: Json | null
+          notification_tokens?: Json | null
           phone?: string | null
           preferred_language?: string
           profile_photo?: string | null
+          push_notifications_enabled?: boolean | null
           rating?: number | null
           referral_code?: string | null
           referred_by?: string | null
@@ -69,6 +75,7 @@ export type Database = {
           created_at?: string | null
           credit_balance?: number | null
           email?: string
+          email_notifications_enabled?: boolean | null
           id?: string
           is_verified?: boolean | null
           language?: string | null
@@ -76,9 +83,11 @@ export type Database = {
           loyalty_tier?: string | null
           name?: string
           notification_preferences?: Json | null
+          notification_tokens?: Json | null
           phone?: string | null
           preferred_language?: string
           profile_photo?: string | null
+          push_notifications_enabled?: boolean | null
           rating?: number | null
           referral_code?: string | null
           referred_by?: string | null
@@ -239,6 +248,56 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "Tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_queue: {
+        Row: {
+          content: string
+          created_at: string
+          data: Json | null
+          event_type: string
+          id: string
+          scheduled_for: string
+          sent_at: string | null
+          status: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          data?: Json | null
+          event_type: string
+          id?: string
+          scheduled_for: string
+          sent_at?: string | null
+          status?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          data?: Json | null
+          event_type?: string
+          id?: string
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_queue_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
             referencedColumns: ["id"]
           },
         ]
@@ -1417,6 +1476,10 @@ export type Database = {
       postgis_wagyu_version: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      schedule_task_reminder: {
+        Args: { task_id_param: string }
+        Returns: undefined
       }
       spheroid_in: {
         Args: { "": unknown }
