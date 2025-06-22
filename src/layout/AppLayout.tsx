@@ -3,18 +3,53 @@ import React from "react";
 import { NavLink, useLocation, Outlet } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import EnhancedLanguagePicker from "@/components/EnhancedLanguagePicker";
+import AdminRoleSwitcher from "@/components/AdminRoleSwitcher";
+import { useAdminRole } from "@/contexts/AdminRoleContext";
 
 export default function AppLayout() {
   const location = useLocation();
   const { t } = useTranslation();
+  const { currentRole, isAdmin } = useAdminRole();
 
-  const navLinks = [
+  // Base navigation links
+  const baseNavLinks = [
     { path: "/", label: t("home") },
-    { path: "/post-task", label: t("postTask") },
+  ];
+
+  // Role-specific navigation links
+  const roleNavLinks = {
+    customer: [
+      { path: "/post-task", label: t("postTask") },
+      { path: "/offers", label: t("offers") },
+      { path: "/favorites", label: t("favorites") },
+    ],
+    provider: [
+      { path: "/dashboard", label: t("dashboard") },
+    ],
+    admin: [
+      { path: "/admin", label: "Admin Dashboard" },
+    ]
+  };
+
+  // Common links for all authenticated users
+  const commonLinks = [
     { path: "/inbox", label: t("inbox") },
-    { path: "/favorites", label: t("favorites") },
     { path: "/profile", label: t("profile") },
   ];
+
+  // Build navigation based on current role
+  const navLinks = [
+    ...baseNavLinks,
+    ...(roleNavLinks[currentRole] || []),
+    ...commonLinks
+  ];
+
+  // If admin, show additional navigation for all roles
+  const adminNavLinks = isAdmin ? [
+    { path: "/admin", label: "Admin", role: "admin" },
+    { path: "/dashboard", label: "Provider View", role: "provider" },
+    { path: "/post-task", label: "Customer View", role: "customer" },
+  ] : [];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-slate-100">
@@ -47,6 +82,14 @@ export default function AppLayout() {
                 {link.label}
               </NavLink>
             ))}
+            
+            {/* Admin Role Switcher */}
+            {isAdmin && (
+              <div className="ml-4 flex items-center gap-2">
+                <AdminRoleSwitcher />
+              </div>
+            )}
+            
             <div className="ml-4">
               <EnhancedLanguagePicker compact showLabel={false} />
             </div>

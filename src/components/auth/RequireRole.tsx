@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAdminRole } from "@/contexts/AdminRoleContext";
 
 interface RequireRoleProps {
   children: React.ReactNode;
@@ -15,6 +16,7 @@ export default function RequireRole({ children, allowedRoles, redirectTo = "/" }
   const [hasAccess, setHasAccess] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { currentRole, isAdmin } = useAdminRole();
 
   useEffect(() => {
     const checkRole = async () => {
@@ -26,15 +28,21 @@ export default function RequireRole({ children, allowedRoles, redirectTo = "/" }
           return;
         }
 
-        // Get user profile to check role
-        const { data: profile, error } = await supabase
-          .from("app_users")
+        // If user is admin, allow access to everything
+        if (isAdmin) {
+          setHasAccess(true);
+          setLoading(false);
+          return;
+        }
+
+        // Check user roles in user_roles table
+        const { data: userRoles, error } = await supabase
+          .from("user_roles")
           .select("role")
-          .eq("id", user.id)
-          .single();
+          .eq("user_id", user.id);
 
         if (error) {
-          console.error("Error fetching user profile:", error);
+          console.error("Error fetching user roles:", error);
           toast({
             title: "Access Error",
             description: "Unable to verify your permissions",
@@ -44,7 +52,10 @@ export default function RequireRole({ children, allowedRoles, redirectTo = "/" }
           return;
         }
 
-        if (!profile || !allowedRoles.includes(profile.role)) {
+        const userRoleList = userRoles?.map(r => r.role) || [];
+        const hasRequiredRole = allowedRoles.some(role => userRoleList.includes(role));
+
+        if (!hasRequiredRole) {
           toast({
             title: "Access Denied",
             description: "You do not have access to this section",
@@ -52,7 +63,7 @@ export default function RequireRole({ children, allowedRoles, redirectTo = "/" }
           });
           
           // Smart redirect based on user role
-          const smartRedirect = profile?.role === "provider" ? "/dashboard" : "/";
+          const smartRedirect = userRoleList.includes("provider") ? "/dashboard" : "/";
           navigate(smartRedirect, { replace: true });
           return;
         }
@@ -67,7 +78,7 @@ export default function RequireRole({ children, allowedRoles, redirectTo = "/" }
     };
 
     checkRole();
-  }, [allowedRoles, navigate, redirectTo, toast]);
+  }, [allowedRoles, navigate, redirectTo, toast, isAdmin]);
 
   if (loading) {
     return (
