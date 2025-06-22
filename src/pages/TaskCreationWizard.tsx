@@ -100,21 +100,22 @@ export default function TaskCreationWizard() {
         ? new Date(Date.now() + selectedBoost.duration * 60 * 60 * 1000).toISOString()
         : null;
 
+      // Use the correct field names for the Tasks table
       const { error } = await supabase.from("Tasks").insert([
         {
-          title: title.trim(),
+          offer: title.trim(), // Use 'offer' instead of 'title'
           description: description.trim(),
           category,
           price: price,
           deadline: deadline || null,
           location: location.trim() || null,
           user_id: user.id,
-          status: "open",
           type: "standard",
           is_boosted: selectedBoost ? selectedBoost.duration > 0 : false,
           boost_duration: selectedBoost ? selectedBoost.duration : 0,
           boost_amount: selectedBoost ? selectedBoost.price : 0,
           boost_expires_at: boostExpiresAt,
+          boost_status: boostOption,
         }
       ]);
 

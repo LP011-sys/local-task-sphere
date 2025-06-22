@@ -71,7 +71,7 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
         ? new Date(Date.now() + selectedBoost.duration * 60 * 60 * 1000).toISOString()
         : null;
 
-      // Prepare Supabase payload
+      // Prepare Supabase payload - use 'offer' instead of 'title'
       const payload = {
         user_id: user.id,
         category: form.category,
@@ -80,12 +80,11 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
         price: String(form.budget),
         boost_status: form.boost,
         type: "standard",
-        offer: form.title,
-        status: "open",
+        offer: form.title, // Use 'offer' field for task title
+        boost_expires_at: boostExpiresAt,
         is_boosted: selectedBoost ? selectedBoost.duration > 0 : false,
         boost_duration: selectedBoost ? selectedBoost.duration : 0,
         boost_amount: selectedBoost ? selectedBoost.price : 0,
-        boost_expires_at: boostExpiresAt,
       };
 
       const { error } = await supabase.from("Tasks").insert([payload]);
