@@ -21,7 +21,7 @@ import AdminPushPage from "@/pages/admin/AdminPushPage";
 import PremiumPackages from "./pages/PremiumPackages";
 import AuthPage from "@/pages/AuthPage";
 import AppLayout from "@/layout/AppLayout";
-import TaskCreationWizard from "@/pages/TaskCreationWizard";
+import TaskCreationWizardPage from "@/pages/TaskCreationWizardPage";
 import ProviderDashboard from "@/pages/ProviderDashboard";
 import CustomerOffers from "@/pages/CustomerOffers";
 import Chat from "@/pages/Chat";
@@ -108,7 +108,7 @@ const App = () => (
                 <Route path="/post-task" element={
                   <RequireAuth>
                     <RequireRole allowedRoles={["customer"]}>
-                      <TaskCreationWizard />
+                      <TaskCreationWizardPage />
                     </RequireRole>
                   </RequireAuth>
                 } />
