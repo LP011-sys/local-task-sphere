@@ -30,11 +30,13 @@ export function useAuthRedirect() {
       } else if (userRole === "admin") {
         navigate("/admin");
       } else {
-        navigate("/");
+        // Default to customer for users without a role
+        navigate("/post-task");
       }
     } catch (error) {
       console.error("Redirect error:", error);
-      navigate("/");
+      // Default redirect on error
+      navigate("/post-task");
     }
   };
 
