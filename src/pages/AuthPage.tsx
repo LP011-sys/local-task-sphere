@@ -8,11 +8,15 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 import { FcGoogle } from "react-icons/fc";
 import { SiApple } from "react-icons/si";
+import RoleSelector from "@/components/signup/RoleSelector";
+
+type Role = "customer" | "provider";
 
 export default function AuthPage() {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -38,6 +42,13 @@ export default function AuthPage() {
       setLoading(false);
       return;
     }
+
+    // For signup, require role selection
+    if (mode === "signup" && !selectedRole) {
+      setError("Please select whether you're a Customer or Provider.");
+      setLoading(false);
+      return;
+    }
     
     try {
       if (mode === "login") {
@@ -60,6 +71,10 @@ export default function AuthPage() {
           password,
           options: {
             emailRedirectTo: window.location.origin + "/",
+            data: {
+              roles: [selectedRole!],
+              active_role: selectedRole!
+            }
           }
         });
         
@@ -120,6 +135,15 @@ export default function AuthPage() {
             <label className="block mb-1 font-medium text-sm">Password</label>
             <Input type="password" value={password} onChange={e => setPassword(e.target.value)} />
           </div>
+          
+          {/* Role selection for signup */}
+          {mode === "signup" && (
+            <RoleSelector 
+              selectedRole={selectedRole}
+              onRoleChange={setSelectedRole}
+            />
+          )}
+          
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Loading..." : mode === "login" ? "Log in" : "Sign up"}
           </Button>
