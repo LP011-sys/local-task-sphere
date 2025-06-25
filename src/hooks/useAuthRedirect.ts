@@ -22,21 +22,21 @@ export function useAuthRedirect() {
       // Use active_role if available, otherwise fall back to role
       const userRole = profile?.active_role || profile?.role;
 
-      // Redirect based on role
+      // Redirect based on active role
       if (userRole === "customer") {
-        navigate("/post-task");
+        navigate("/dashboard/customer");
       } else if (userRole === "provider") {
-        navigate("/dashboard");
+        navigate("/dashboard/provider");
       } else if (userRole === "admin") {
         navigate("/admin");
       } else {
-        // Default to customer for users without a role
-        navigate("/post-task");
+        // Default to customer dashboard for users without a role
+        navigate("/dashboard/customer");
       }
     } catch (error) {
       console.error("Redirect error:", error);
       // Default redirect on error
-      navigate("/post-task");
+      navigate("/dashboard/customer");
     }
   };
 

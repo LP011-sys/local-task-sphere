@@ -23,6 +23,7 @@ import AuthPage from "@/pages/AuthPage";
 import AppLayout from "@/layout/AppLayout";
 import TaskCreationWizardPage from "@/pages/TaskCreationWizardPage";
 import ProviderDashboard from "@/pages/ProviderDashboard";
+import CustomerDashboard from "@/pages/CustomerDashboard";
 import CustomerOffers from "@/pages/CustomerOffers";
 import Chat from "@/pages/Chat";
 import MyFavorites from "@/pages/MyFavorites";
@@ -104,7 +105,15 @@ const App = () => (
                   </RequireAuth>
                 } />
 
-                {/* Customer-only routes */}
+                {/* Customer dashboard and routes */}
+                <Route path="/dashboard/customer" element={
+                  <RequireAuth>
+                    <RequireRole allowedRoles={["customer"]}>
+                      <CustomerDashboard />
+                    </RequireRole>
+                  </RequireAuth>
+                } />
+
                 <Route path="/post-task" element={
                   <RequireAuth>
                     <RequireRole allowedRoles={["customer"]}>
@@ -129,7 +138,15 @@ const App = () => (
                   </RequireAuth>
                 } />
 
-                {/* Provider-only routes */}
+                {/* Provider dashboard and routes */}
+                <Route path="/dashboard/provider" element={
+                  <RequireAuth>
+                    <RequireRole allowedRoles={["provider"]}>
+                      <ProviderDashboard />
+                    </RequireRole>
+                  </RequireAuth>
+                } />
+
                 <Route path="/dashboard" element={
                   <RequireAuth>
                     <RequireRole allowedRoles={["provider"]}>
