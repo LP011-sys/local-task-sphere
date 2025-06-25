@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 import { Crown, User, Wrench } from "lucide-react";
 
 export default function AdminRoleSwitcher() {
-  const { currentRole, isAdmin, switchRole, resetRole } = useAdminRole();
+  const { currentRole, availableRoles, isAdmin, switchRole, resetRole } = useAdminRole();
   const { t } = useTranslation();
 
   if (!isAdmin) return null;
@@ -49,24 +49,14 @@ export default function AdminRoleSwitcher() {
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="admin">
-            <div className="flex items-center gap-2">
-              <Crown size={14} />
-              Admin
-            </div>
-          </SelectItem>
-          <SelectItem value="customer">
-            <div className="flex items-center gap-2">
-              <User size={14} />
-              Customer
-            </div>
-          </SelectItem>
-          <SelectItem value="provider">
-            <div className="flex items-center gap-2">
-              <Wrench size={14} />
-              Provider
-            </div>
-          </SelectItem>
+          {availableRoles.map((role) => (
+            <SelectItem key={role} value={role}>
+              <div className="flex items-center gap-2">
+                {roleIcons[role]}
+                {roleLabels[role]}
+              </div>
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
 

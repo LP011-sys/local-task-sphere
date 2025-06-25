@@ -53,6 +53,7 @@ export type Database = {
       }
       app_users: {
         Row: {
+          active_role: string | null
           auth_user_id: string
           bio: string | null
           completed_tasks: number | null
@@ -77,12 +78,14 @@ export type Database = {
           referral_code: string | null
           referred_by: string | null
           role: Database["public"]["Enums"]["user_role"]
+          roles: string[] | null
           subscription_plan: string | null
           tasks_completed: number | null
           updated_at: string | null
           verification_status: string | null
         }
         Insert: {
+          active_role?: string | null
           auth_user_id: string
           bio?: string | null
           completed_tasks?: number | null
@@ -107,12 +110,14 @@ export type Database = {
           referral_code?: string | null
           referred_by?: string | null
           role: Database["public"]["Enums"]["user_role"]
+          roles?: string[] | null
           subscription_plan?: string | null
           tasks_completed?: number | null
           updated_at?: string | null
           verification_status?: string | null
         }
         Update: {
+          active_role?: string | null
           auth_user_id?: string
           bio?: string | null
           completed_tasks?: number | null
@@ -137,6 +142,7 @@ export type Database = {
           referral_code?: string | null
           referred_by?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          roles?: string[] | null
           subscription_plan?: string | null
           tasks_completed?: number | null
           updated_at?: string | null

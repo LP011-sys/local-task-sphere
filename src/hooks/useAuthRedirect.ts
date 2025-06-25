@@ -15,16 +15,19 @@ export function useAuthRedirect() {
       // Get user profile to determine role
       const { data: profile } = await supabase
         .from("app_users")
-        .select("role")
-        .eq("id", user.id)
+        .select("role, roles, active_role")
+        .eq("auth_user_id", user.id)
         .single();
 
+      // Use active_role if available, otherwise fall back to role
+      const userRole = profile?.active_role || profile?.role;
+
       // Redirect based on role
-      if (profile?.role === "customer") {
+      if (userRole === "customer") {
         navigate("/post-task");
-      } else if (profile?.role === "provider") {
+      } else if (userRole === "provider") {
         navigate("/dashboard");
-      } else if (profile?.role === "admin") {
+      } else if (userRole === "admin") {
         navigate("/admin");
       } else {
         navigate("/");
