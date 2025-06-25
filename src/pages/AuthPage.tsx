@@ -31,6 +31,41 @@ export default function AuthPage() {
         redirectAfterAuth();
       }
     });
+
+    // Listen for auth state changes to handle email confirmation
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        // Check if user profile exists, if not create it
+        const { data: existingProfile } = await supabase
+          .from('app_users')
+          .select('id')
+          .eq('auth_user_id', session.user.id)
+          .single();
+
+        if (!existingProfile) {
+          // Create user profile with role information
+          const userMetadata = session.user.user_metadata;
+          const roles = userMetadata?.roles || ['customer'];
+          const activeRole = userMetadata?.active_role || roles[0];
+
+          await supabase
+            .from('app_users')
+            .insert({
+              auth_user_id: session.user.id,
+              email: session.user.email,
+              name: session.user.user_metadata?.full_name || null,
+              role: activeRole,
+              roles: roles,
+              active_role: activeRole
+            });
+        }
+
+        // Redirect after successful auth
+        await redirectAfterAuth();
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [redirectAfterAuth]);
 
   async function handleAuth(e: React.FormEvent) {
@@ -64,7 +99,7 @@ export default function AuthPage() {
         }
         
         toast({ title: "Logged in!", description: "Welcome back 😊" });
-        await redirectAfterAuth();
+        // The auth state change listener will handle the redirect
         return;
       } else {
         const { error } = await supabase.auth.signUp({
