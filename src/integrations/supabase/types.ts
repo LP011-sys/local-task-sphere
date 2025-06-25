@@ -61,6 +61,7 @@ export type Database = {
           email: string
           email_notifications_enabled: boolean | null
           id: string
+          interface_language: string | null
           is_verified: boolean | null
           language: string | null
           location: unknown | null
@@ -90,6 +91,7 @@ export type Database = {
           email: string
           email_notifications_enabled?: boolean | null
           id?: string
+          interface_language?: string | null
           is_verified?: boolean | null
           language?: string | null
           location?: unknown | null
@@ -119,6 +121,7 @@ export type Database = {
           email?: string
           email_notifications_enabled?: boolean | null
           id?: string
+          interface_language?: string | null
           is_verified?: boolean | null
           language?: string | null
           location?: unknown | null
