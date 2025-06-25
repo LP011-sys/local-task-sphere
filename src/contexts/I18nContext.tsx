@@ -27,7 +27,12 @@ const translations = {
     categoryManager: "Category Manager",
     selectRole: "Select your role",
     appName: "Task Hub",
-    language: "Language"
+    language: "Language",
+    home: "Home",
+    chat: "Chat",
+    favorites: "Favorites",
+    referral: "Referral",
+    review: "Review"
   },
   sr: {
     customer: "Korisnik",
@@ -52,7 +57,12 @@ const translations = {
     categoryManager: "Kategorije",
     selectRole: "Izaberite svoju ulogu",
     appName: "Task Hub",
-    language: "Jezik"
+    language: "Jezik",
+    home: "Početna",
+    chat: "Razgovor",
+    favorites: "Omiljeni",
+    referral: "Preporuke",
+    review: "Recenzija"
   },
   ru: {
     customer: "Клиент",
@@ -77,7 +87,12 @@ const translations = {
     categoryManager: "Категории",
     selectRole: "Выберите вашу роль",
     appName: "Task Hub",
-    language: "Язык"
+    language: "Язык",
+    home: "Главная",
+    chat: "Чат",
+    favorites: "Избранное",
+    referral: "Реферальная",
+    review: "Отзыв"
   }
 };
 

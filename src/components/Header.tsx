@@ -4,7 +4,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import EnhancedLanguagePicker from "@/components/EnhancedLanguagePicker";
+import LanguageButtons from "@/components/LanguageButtons";
 import AdminRoleSwitcher from "@/components/AdminRoleSwitcher";
 import { useAdminRole } from "@/contexts/AdminRoleContext";
 
@@ -21,6 +21,9 @@ export default function Header({ navLinks }: HeaderProps) {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
+  // Filter out the home link since we're already on the home page
+  const filteredNavLinks = navLinks.filter(link => link.path !== "/");
+
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-white/90 backdrop-blur shadow-sm" role="banner">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16" role="navigation" aria-label="Main navigation">
@@ -35,7 +38,7 @@ export default function Header({ navLinks }: HeaderProps) {
         
         {/* Desktop Navigation */}
         <div className="hidden lg:flex gap-1 items-center" role="menubar">
-          {navLinks.map(link => (
+          {filteredNavLinks.map(link => (
             <NavLink
               key={link.path}
               to={link.path}
@@ -50,7 +53,7 @@ export default function Header({ navLinks }: HeaderProps) {
               role="menuitem"
             >
               {({ isActive }) => (
-                <span aria-current={isActive ? 'page' : undefined}>
+                <span aria-current={isActive ? 'page' : undefined} className="uppercase">
                   {link.label}
                 </span>
               )}
@@ -67,7 +70,7 @@ export default function Header({ navLinks }: HeaderProps) {
             </div>
           )}
           
-          <EnhancedLanguagePicker compact showLabel={false} />
+          <LanguageButtons compact />
         </div>
 
         {/* Mobile Menu Button */}
@@ -100,7 +103,7 @@ export default function Header({ navLinks }: HeaderProps) {
           aria-label="Mobile navigation menu"
         >
           <div className="max-w-7xl mx-auto px-4 py-4 space-y-2">
-            {navLinks.map(link => (
+            {filteredNavLinks.map(link => (
               <NavLink
                 key={link.path}
                 to={link.path}
@@ -116,7 +119,7 @@ export default function Header({ navLinks }: HeaderProps) {
                 role="menuitem"
               >
                 {({ isActive }) => (
-                  <span aria-current={isActive ? 'page' : undefined}>
+                  <span aria-current={isActive ? 'page' : undefined} className="uppercase">
                     {link.label}
                   </span>
                 )}
@@ -125,7 +128,7 @@ export default function Header({ navLinks }: HeaderProps) {
             
             {/* Mobile Language Picker */}
             <div className="pt-4 border-t">
-              <EnhancedLanguagePicker compact={false} showLabel={true} />
+              <LanguageButtons compact={false} />
             </div>
           </div>
         </div>

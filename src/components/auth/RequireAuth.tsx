@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 
 interface RequireAuthProps {
   children: React.ReactNode;
@@ -12,7 +11,6 @@ export default function RequireAuth({ children }: RequireAuthProps) {
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -20,11 +18,7 @@ export default function RequireAuth({ children }: RequireAuthProps) {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session?.user) {
-          toast({
-            title: "Authentication Required",
-            description: "You must be logged in to view this page",
-            variant: "destructive"
-          });
+          // Silently redirect without showing toast notification
           navigate("/auth", { replace: true });
           return;
         }
@@ -51,7 +45,7 @@ export default function RequireAuth({ children }: RequireAuthProps) {
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, toast]);
+  }, [navigate]);
 
   if (loading) {
     return (
