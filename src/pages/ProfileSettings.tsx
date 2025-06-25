@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useCurrentUserProfile, useUpdateCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
 import { useToast } from "@/hooks/use-toast";
-import { getLoyaltyTier, getPlatformFeeDiscount } from "@/hooks/useLoyaltyTier";
 import { supabase } from "@/integrations/supabase/client";
 import NotificationSettings from "@/components/NotificationSettings";
 import { ProfileLanguageSelector } from "@/components/ProfileLanguageSelector";
+import { LoyaltyTierCard } from "@/components/LoyaltyTierCard";
 import { Camera } from "lucide-react";
 
 export default function ProfileSettings() {
@@ -127,9 +127,6 @@ export default function ProfileSettings() {
     return <div className="text-center py-10">Failed to load profile.</div>;
   }
 
-  const loyaltyTier = getLoyaltyTier(profile.tasks_completed || 0);
-  const discount = getPlatformFeeDiscount(loyaltyTier);
-
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-6">
       <h1 className="text-2xl font-bold mb-6">Profile Settings</h1>
@@ -196,21 +193,8 @@ export default function ProfileSettings() {
         </CardContent>
       </Card>
 
-      {/* Loyalty Tier Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Loyalty Tier</CardTitle>
-          <CardDescription>Your current loyalty status and benefits.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p>
-            You are currently at <strong>{loyaltyTier}</strong> tier.
-          </p>
-          <p>
-            Platform fee discount: <strong>{discount * 100}%</strong>
-          </p>
-        </CardContent>
-      </Card>
+      {/* Enhanced Loyalty Tier Card */}
+      <LoyaltyTierCard tasksCompleted={profile.tasks_completed || 0} />
 
       {/* Add Notification Settings Card */}
       <NotificationSettings />
