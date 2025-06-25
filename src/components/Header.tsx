@@ -14,7 +14,7 @@ interface HeaderProps {
 
 export default function Header({ navLinks }: HeaderProps) {
   const { t } = useTranslation();
-  const { isAdmin } = useAdminRole();
+  const { isAdmin, currentRole } = useAdminRole();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const toggleMobileMenu = () => {
@@ -30,7 +30,7 @@ export default function Header({ navLinks }: HeaderProps) {
         {/* Logo - clickable link to home */}
         <NavLink
           to="/"
-          className="flex items-center gap-2 font-bold text-heading-2 tracking-tight text-primary hover:text-primary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors"
+          className="flex items-center gap-2 font-bold text-heading-2 tracking-tight text-primary hover:text-primary/80 focus:outline-none transition-colors"
           aria-label={`${t("appName")} - Go to homepage`}
         >
           {t("appName")}

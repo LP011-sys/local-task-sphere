@@ -2,8 +2,11 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { LogIn } from "lucide-react";
+import { useAdminRole } from "@/contexts/AdminRoleContext";
 
 export default function IndexHero({ authed }: { authed: boolean }) {
+  const { currentRole } = useAdminRole();
+
   return (
     <section className="flex flex-col md:flex-row items-center justify-between gap-10 p-8 max-w-7xl w-full mx-auto">
       <div className="flex flex-col gap-4 max-w-xl md:text-left text-center items-start md:items-start">
@@ -13,9 +16,20 @@ export default function IndexHero({ authed }: { authed: boolean }) {
           Instantly find help, make offers, and collaborate in your local area.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 mt-3">
-          <a href="/post-task"><Button size="lg" className="text-base">Post a Task</Button></a>
-          <a href="#tasks"><Button variant="outline" size="lg" className="text-base">Browse Tasks</Button></a>
-          {authed && (<a href="/dashboard"><Button variant="secondary" size="lg" className="text-base">View My Dashboard</Button></a>)}
+          {/* Only show Post a Task button for customers */}
+          {currentRole === 'customer' && (
+            <a href="/post-task">
+              <Button size="lg" className="text-base">Post a Task</Button>
+            </a>
+          )}
+          <a href="#tasks">
+            <Button variant="outline" size="lg" className="text-base">Browse Tasks</Button>
+          </a>
+          {authed && (
+            <a href="/dashboard">
+              <Button variant="secondary" size="lg" className="text-base">View My Dashboard</Button>
+            </a>
+          )}
         </div>
       </div>
       <img
