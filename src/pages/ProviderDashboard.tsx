@@ -1,9 +1,9 @@
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Search, CheckCircle, MessageCircle } from "lucide-react";
+import AdminRoleSwitcher from "@/components/AdminRoleSwitcher";
 
 export default function ProviderDashboard() {
   const navigate = useNavigate();
@@ -11,6 +11,11 @@ export default function ProviderDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-slate-100 p-4">
       <div className="max-w-7xl mx-auto space-y-6">
+        {/* Admin Role Switcher */}
+        <div className="flex justify-end">
+          <AdminRoleSwitcher />
+        </div>
+        
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold text-primary">Provider Dashboard</h1>
           <p className="text-muted-foreground">Find tasks and grow your business</p>
