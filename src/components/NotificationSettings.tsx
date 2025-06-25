@@ -4,14 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Bell, Mail, Smartphone } from "lucide-react";
+import { Bell, Mail, Smartphone, CheckCircle, AlertCircle } from "lucide-react";
 import { useCurrentUserProfile, useUpdateCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
 import { useUpdateNotificationTokens } from "@/hooks/useNotificationQueue";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAdminRole } from "@/contexts/AdminRoleContext";
 
 export default function NotificationSettings() {
   const { toast } = useToast();
+  const { isAdmin } = useAdminRole();
   
   // Get current user
   const [userId, setUserId] = React.useState<string | undefined>();
@@ -102,7 +104,7 @@ export default function NotificationSettings() {
           Notification Settings
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Mail className="h-4 w-4 text-muted-foreground" />
@@ -129,29 +131,60 @@ export default function NotificationSettings() {
           />
         </div>
 
-        <div className="pt-4 border-t">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Push Notification Tokens</p>
-              <p className="text-sm text-muted-foreground">
-                {tokenCount} device(s) registered
-              </p>
+        <div className="pt-2 border-t">
+          <div className="flex items-center gap-2 mb-2">
+            {tokenCount > 0 ? (
+              <CheckCircle className="h-4 w-4 text-green-600" />
+            ) : (
+              <AlertCircle className="h-4 w-4 text-orange-500" />
+            )}
+            <div className="flex-1">
+              {tokenCount > 0 ? (
+                <p className="text-sm font-medium text-green-700">
+                  This device is registered to receive instant task alerts.
+                </p>
+              ) : (
+                <p className="text-sm font-medium text-orange-700">
+                  This device is not yet registered for push alerts.
+                </p>
+              )}
             </div>
+          </div>
+          
+          {tokenCount === 0 && (
             <Button
               variant="outline"
               size="sm"
               onClick={handleRegisterPushToken}
               disabled={updateTokens.isPending}
+              className="w-full"
             >
               Register This Device
             </Button>
-          </div>
+          )}
         </div>
 
-        <div className="text-xs text-muted-foreground">
-          <p><strong>Email notifications:</strong> New offers, task updates, reminders</p>
-          <p><strong>Push notifications:</strong> Instant alerts on your device</p>
-          <p><strong>Reminders:</strong> Sent 1 hour before task deadlines</p>
+        {isAdmin && (
+          <div className="pt-2 border-t">
+            <div className="text-xs text-muted-foreground">
+              <p><strong>Developer Info:</strong> {tokenCount} token(s) registered</p>
+            </div>
+          </div>
+        )}
+
+        <div className="text-xs text-muted-foreground space-y-1">
+          <div className="flex items-start gap-2">
+            <span className="font-medium">Email notifications:</span>
+            <span>New offers, task updates, reminders</span>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="font-medium">Push notifications:</span>
+            <span>Instant alerts on your device</span>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="font-medium">Reminders:</span>
+            <span>Sent 1 hour before task deadlines</span>
+          </div>
         </div>
       </CardContent>
     </Card>

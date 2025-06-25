@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
 import { useCurrentUserProfile, useUpdateCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,6 +40,7 @@ export default function ProfileSettings() {
   const [name, setName] = React.useState("");
   const [bio, setBio] = React.useState("");
   const [language, setLanguage] = React.useState("en");
+  const [interfaceLanguage, setInterfaceLanguage] = React.useState("en");
   const [profilePhoto, setProfilePhoto] = React.useState<File | null>(null);
   const [profilePhotoPreview, setProfilePhotoPreview] = React.useState<string>("");
 
@@ -47,6 +49,7 @@ export default function ProfileSettings() {
       setName(profile.name || "");
       setBio(profile.bio || "");
       setLanguage(profile.language || "en");
+      setInterfaceLanguage(profile.interface_language || "en");
       setProfilePhotoPreview(profile.profile_photo || "");
     }
   }, [profile]);
@@ -89,6 +92,22 @@ export default function ProfileSettings() {
     }
   };
 
+  const handleLanguageChange = (newLanguage: string) => {
+    setLanguage(newLanguage);
+    toast({
+      title: "Language Updated",
+      description: "Your live chat translation language has been updated.",
+    });
+  };
+
+  const handleInterfaceLanguageChange = (newLanguage: string) => {
+    setInterfaceLanguage(newLanguage);
+    toast({
+      title: "Interface Language Updated",  
+      description: "Your interface language preference has been updated.",
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -110,6 +129,7 @@ export default function ProfileSettings() {
         name, 
         bio, 
         language,
+        interface_language: interfaceLanguage,
         profile_photo: photoUrl
       });
       
@@ -128,7 +148,7 @@ export default function ProfileSettings() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-6">
+    <div className="max-w-2xl mx-auto p-6 space-y-4">
       <h1 className="text-2xl font-bold mb-6">Profile Settings</h1>
       
       {/* Profile Information Card */}
@@ -193,27 +213,44 @@ export default function ProfileSettings() {
         </CardContent>
       </Card>
 
+      <Separator />
+
       {/* Enhanced Loyalty Tier Card */}
       <LoyaltyTierCard tasksCompleted={profile.tasks_completed || 0} />
 
+      <Separator />
+
       {/* Add Notification Settings Card */}
       <NotificationSettings />
+
+      <Separator />
 
       {/* Language & Preferences Card */}
       <Card>
         <CardHeader>
           <CardTitle>Language & Preferences</CardTitle>
-          <CardDescription>Set your preferred language for live chat translation and interface.</CardDescription>
+          <CardDescription>Configure your language settings for the best experience.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
           <ProfileLanguageSelector
             value={language}
-            onChange={setLanguage}
-            label="Preferred Language for Live Chat Translation"
+            onChange={handleLanguageChange}
+            label="Live Chat Translation Language"
           />
           <p className="text-sm text-muted-foreground">
-            This setting will be used to automatically translate messages in live chat when communicating with users who speak different languages.
+            Messages in live chat will be automatically translated to this language when communicating with users who speak different languages.
           </p>
+          
+          <div className="pt-2">
+            <ProfileLanguageSelector
+              value={interfaceLanguage}
+              onChange={handleInterfaceLanguageChange}
+              label="Interface Language"
+            />
+            <p className="text-sm text-muted-foreground mt-2">
+              The language used for menus, buttons, and interface elements throughout the app.
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>
