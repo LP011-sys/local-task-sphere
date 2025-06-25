@@ -19,6 +19,7 @@ export default function AuthPage() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailSent, setEmailSent] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { redirectAfterAuth } = useAuthRedirect();
@@ -84,9 +85,8 @@ export default function AuthPage() {
           return;
         }
         
+        setEmailSent(true);
         toast({ title: "Check your email!", description: "A confirmation link was sent." });
-        // Redirect to onboarding after sign up
-        setTimeout(() => navigate("/onboarding", { replace: true }), 1300);
       }
     } catch (err: any) {
       setError(err.message ?? "An error occurred");
@@ -102,7 +102,7 @@ export default function AuthPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: window.location.origin + "/onboarding",
+        redirectTo: window.location.origin + "/",
       }
     });
     
@@ -111,6 +111,47 @@ export default function AuthPage() {
       setLoading(false);
     }
     // Supabase will redirect on success
+  }
+
+  // Show email confirmation message after successful signup
+  if (emailSent) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-blue-50 to-slate-100">
+        <div className="bg-white/90 p-8 rounded-2xl shadow-xl w-full max-w-md space-y-7 animate-fade-in text-center">
+          <a
+            href="/"
+            className="self-center font-bold text-2xl tracking-tight text-primary hover:underline focus:outline-none mb-2 block"
+            aria-label="Task Hub Home"
+          >
+            Task Hub
+          </a>
+          <div className="space-y-4">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-primary">Check your email</h1>
+            <p className="text-muted-foreground">
+              We've sent a confirmation link to <strong>{email}</strong>
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Click the link in your email to verify your account and complete the signup process.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setEmailSent(false);
+              setMode("login");
+            }}
+            className="w-full"
+          >
+            Back to Login
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
