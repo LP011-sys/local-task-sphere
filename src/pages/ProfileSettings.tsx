@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
@@ -17,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { useUpdateCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
 import { useToast } from "@/hooks/use-toast";
-import { ReloadIcon } from "@radix-ui/react-icons"
+import { ReloadIcon } from "lucide-react"
 
 import RoleManagement from "@/components/RoleManagement";
 
@@ -26,12 +27,12 @@ export default function ProfileSettings() {
   const [session, setSession] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const [fullName, setFullName] = useState('');
-  const [profilePhoto, setProfilePhoto] = useState('');
-  const [website, setWebsite] = useState('');
-  const [isAvailable, setIsAvailable] = useState(false);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [bio, setBio] = useState('');
+  const [phone, setPhone] = useState('');
   const { data: userProfile } = useCurrentUserProfile(session?.user?.id);
-  const { mutate: updateProfile, isLoading: isUpdating } = useUpdateCurrentUserProfile(userProfile?.id);
+  const { mutate: updateProfile, isPending: isUpdating } = useUpdateCurrentUserProfile(userProfile?.id);
 
   useEffect(() => {
     const getSession = async () => {
@@ -52,10 +53,10 @@ export default function ProfileSettings() {
 
   useEffect(() => {
     if (userProfile) {
-      setFullName(userProfile.full_name || '');
-      setProfilePhoto(userProfile.profile_photo || '');
-      setWebsite(userProfile.website || '');
-      setIsAvailable(userProfile.is_available || false);
+      setFirstName(userProfile.first_name || '');
+      setLastName(userProfile.last_name || '');
+      setBio(userProfile.bio || '');
+      setPhone(userProfile.phone || '');
     }
   }, [userProfile]);
 
@@ -68,10 +69,10 @@ export default function ProfileSettings() {
   const handleUpdateProfile = async () => {
     try {
       updateProfile({
-        full_name: fullName,
-        profile_photo: profilePhoto,
-        website: website,
-        is_available: isAvailable,
+        first_name: firstName,
+        last_name: lastName,
+        bio: bio,
+        phone: phone,
       });
       toast({
         title: "Profile updated successfully!",
@@ -103,56 +104,48 @@ export default function ProfileSettings() {
         <CardContent className="grid gap-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="full_name">Full Name</Label>
+              <Label htmlFor="first_name">First Name</Label>
               <Input
-                id="full_name"
-                placeholder="Your full name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                id="first_name"
+                placeholder="Your first name"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="profile_photo">Profile Photo URL</Label>
+              <Label htmlFor="last_name">Last Name</Label>
               <Input
-                id="profile_photo"
-                placeholder="URL to your profile photo"
-                type="url"
-                value={profilePhoto}
-                onChange={(e) => setProfilePhoto(e.target.value)}
+                id="last_name"
+                placeholder="Your last name"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
               />
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="website">Website</Label>
+            <Label htmlFor="phone">Phone Number</Label>
             <Input
-              id="website"
-              placeholder="Your website URL"
-              type="url"
-              value={website}
-              onChange={(e) => setWebsite(e.target.value)}
+              id="phone"
+              placeholder="Your phone number"
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="bio">Bio</Label>
+            <Textarea
+              id="bio"
+              placeholder="Tell us about yourself"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              rows={4}
             />
           </div>
         </CardContent>
       </Card>
 
       <RoleManagement />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Availability</CardTitle>
-          <CardDescription>Set your availability status</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <Label htmlFor="is_available">Available for tasks</Label>
-            <Switch
-              id="is_available"
-              checked={isAvailable}
-              onCheckedChange={(checked) => setIsAvailable(checked)}
-            />
-          </div>
-        </CardContent>
-      </Card>
 
       <div className="flex justify-end">
         <Button onClick={handleUpdateProfile} disabled={isUpdating}>
