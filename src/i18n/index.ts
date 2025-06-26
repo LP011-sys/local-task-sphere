@@ -33,8 +33,15 @@ i18n
     },
     
     detection: {
-      order: ['localStorage', 'navigator', 'htmlTag'],
+      order: ['localStorage', 'querystring', 'navigator', 'htmlTag'],
+      lookupQuerystring: 'lng',
+      lookupLocalStorage: 'i18nextLng',
       caches: ['localStorage'],
+    },
+
+    // Ensure immediate language switching
+    react: {
+      useSuspense: false,
     }
   });
 

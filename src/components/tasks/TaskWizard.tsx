@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,15 +35,20 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
   const [posting, setPosting] = useState(false);
   const navigate = useNavigate();
 
-  function handleChange(field: string, value: string) {
+  const handleChange = useCallback((field: string, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
     // Clear error on change for immediate feedback
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: "" }));
-    }
-  }
+    setErrors(prev => {
+      if (prev[field]) {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      }
+      return prev;
+    });
+  }, []);
 
-  function validateStep(step: number) {
+  const validateStep = useCallback((step: number) => {
     const errs: { [k: string]: string } = {};
     
     if (step === 1) {
@@ -58,33 +63,44 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
       }
     }
     
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
-  }
+    return errs;
+  }, [form.title, form.category, form.description, form.budget]);
 
-  function handleNext() {
-    if (validateStep(currentStep)) {
+  const currentStepErrors = useMemo(() => validateStep(currentStep), [validateStep, currentStep]);
+  const isCurrentStepValid = useMemo(() => Object.keys(currentStepErrors).length === 0, [currentStepErrors]);
+
+  const handleNext = useCallback(() => {
+    const stepErrors = validateStep(currentStep);
+    if (Object.keys(stepErrors).length === 0) {
       setCurrentStep(prev => Math.min(prev + 1, 4));
+      setErrors({});
     } else {
+      setErrors(stepErrors);
       toast({ title: "Please fix errors before continuing", variant: "destructive" });
     }
-  }
+  }, [validateStep, currentStep]);
 
-  function handleBack() {
+  const handleBack = useCallback(() => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
-  }
+    setErrors({});
+  }, []);
 
-  function getCompletedSteps() {
+  const getCompletedSteps = useMemo(() => {
     return [
-      validateStep(1),
-      validateStep(2),
+      Object.keys(validateStep(1)).length === 0,
+      Object.keys(validateStep(2)).length === 0,
       true, // Boost step is always valid
       true, // Review step is always valid
     ];
-  }
+  }, [validateStep]);
 
-  async function handleSubmit() {
-    if (!validateStep(1) || !validateStep(2)) {
+  const handleSubmit = useCallback(async () => {
+    const step1Errors = validateStep(1);
+    const step2Errors = validateStep(2);
+    const allErrors = { ...step1Errors, ...step2Errors };
+    
+    if (Object.keys(allErrors).length > 0) {
+      setErrors(allErrors);
       toast({ title: "Please fix all errors", variant: "destructive" });
       return;
     }
@@ -131,19 +147,20 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
       // Navigate to offers page to see responses
       navigate("/offers");
     } catch (e: any) {
+      console.error("Task posting error:", e);
       toast({ title: "Failed to post task", description: e.message, variant: "destructive" });
     } finally {
       setPosting(false);
     }
-  }
+  }, [validateStep, form, navigate, onDone]);
 
-  function renderStep() {
+  const renderStep = useCallback(() => {
     switch (currentStep) {
       case 1:
         return (
           <WizardStepBasics
             form={form}
-            errors={errors}
+            errors={currentStepErrors}
             onChange={handleChange}
             disabled={posting}
           />
@@ -152,7 +169,7 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
         return (
           <WizardStepBudget
             form={form}
-            errors={errors}
+            errors={currentStepErrors}
             onChange={handleChange}
             disabled={posting}
           />
@@ -170,9 +187,9 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
       default:
         return null;
     }
-  }
+  }, [currentStep, form, currentStepErrors, handleChange, posting]);
 
-  const selectedBoost = BOOST_OPTIONS.find(opt => opt.value === form.boost);
+  const selectedBoost = useMemo(() => BOOST_OPTIONS.find(opt => opt.value === form.boost), [form.boost]);
 
   return (
     <div className="max-w-lg w-full mx-auto bg-white border rounded-xl shadow-md p-6">
@@ -184,7 +201,7 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
         currentStep={currentStep}
         totalSteps={4}
         stepLabels={STEP_LABELS}
-        completedSteps={getCompletedSteps()}
+        completedSteps={getCompletedSteps}
       />
 
       <div className="min-h-[400px]">
@@ -207,7 +224,7 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
           <Button
             type="button"
             onClick={handleNext}
-            disabled={posting}
+            disabled={posting || !isCurrentStepValid}
             className="flex items-center gap-2"
           >
             Next

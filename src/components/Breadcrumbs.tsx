@@ -15,8 +15,8 @@ import { Home } from "lucide-react";
 
 const routeLabels: Record<string, string> = {
   '/': 'home',
-  '/dashboard/customer': 'customerDashboard',
-  '/dashboard/provider': 'providerDashboard',
+  '/dashboard/customer': 'dashboard',
+  '/dashboard/provider': 'dashboard',
   '/post-task': 'postTask',
   '/offers': 'offers',
   '/favorites': 'favorites',
@@ -24,10 +24,13 @@ const routeLabels: Record<string, string> = {
   '/profile': 'profile',
   '/referral': 'referral',
   '/review': 'review',
-  '/admin': 'adminDashboard',
-  '/complete-profile/customer': 'completeProfile',
-  '/complete-profile/provider': 'completeProfile',
+  '/admin': 'admin',
+  '/complete-profile/customer': 'profile',
+  '/complete-profile/provider': 'profile',
   '/premium': 'premium',
+  '/provider/tasks': 'taskFeed',
+  '/provider/offers': 'myOffers',
+  '/provider/earnings': 'earnings',
 };
 
 export default function Breadcrumbs() {
@@ -56,11 +59,13 @@ export default function Breadcrumbs() {
     currentPath += `/${segment}`;
     const isLast = index === pathSegments.length - 1;
     
-    const label = routeLabels[currentPath] || segment;
+    // Try to get translation key from routeLabels, fallback to segment
+    const translationKey = routeLabels[currentPath] || segment;
+    const label = t(translationKey, { defaultValue: segment.charAt(0).toUpperCase() + segment.slice(1) });
     
     breadcrumbItems.push({
       path: currentPath,
-      label: t(label) || segment,
+      label,
       isLast
     });
   });
