@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +9,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 import RoleSelector from "@/components/signup/RoleSelector";
-import AuthCallback from "@/components/auth/AuthCallback";
 
 type Role = "customer" | "provider";
 
@@ -99,7 +97,7 @@ export default function AuthPage() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth`,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: {
             name,
             roles: [selectedRole],
@@ -151,15 +149,6 @@ export default function AuthPage() {
       toast.error(error.message || "Failed to sign in");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleAuthSuccess = () => {
-    console.log('AuthPage: Auth success callback triggered from AuthCallback');
-    // Clear processing state when auth callback completes
-    setIsProcessingAuth(false);
-    if (processingTimeout) {
-      clearTimeout(processingTimeout);
     }
   };
 
@@ -215,7 +204,6 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-blue-50 to-slate-100 p-4">
-      <AuthCallback onAuthSuccess={handleAuthSuccess} />
       
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
