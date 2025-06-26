@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 const SKILL_CATEGORIES = [
   "Mounting", "Fixing", "Delivery", "Assembly", "Cleaning", "Painting",
@@ -49,20 +50,44 @@ export default function CompleteProfileProvider() {
   };
 
   const uploadProfilePicture = async (file: File) => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}/profile.${fileExt}`;
-    
-    const { error } = await supabase.storage
-      .from('profiles')
-      .upload(fileName, file, { upsert: true });
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/profile.${fileExt}`;
+      
+      // Try to upload to 'profiles' bucket, fallback to 'avatars' if it doesn't exist
+      let bucket = 'profiles';
+      let { error } = await supabase.storage
+        .from(bucket)
+        .upload(fileName, file, { upsert: true });
 
-    if (error) throw error;
+      if (error && error.message.includes('Bucket not found')) {
+        console.log('Profiles bucket not found, trying avatars bucket');
+        bucket = 'avatars';
+        const result = await supabase.storage
+          .from(bucket)
+          .upload(fileName, file, { upsert: true });
+        error = result.error;
+      }
 
-    const { data } = supabase.storage
-      .from('profiles')
-      .getPublicUrl(fileName);
+      if (error) {
+        console.warn('Storage upload failed, continuing without profile picture:', error);
+        toast({
+          title: "Profile picture upload failed",
+          description: "Continuing without profile picture. You can add one later in settings.",
+          variant: "destructive"
+        });
+        return null;
+      }
 
-    return data.publicUrl;
+      const { data } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(fileName);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.warn('Profile picture upload error:', error);
+      return null;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -120,9 +145,12 @@ export default function CompleteProfileProvider() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-slate-100 p-4">
       <div className="max-w-2xl mx-auto space-y-6 py-8">
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-4">
           <h1 className="text-3xl font-bold text-primary">Complete Your Provider Profile</h1>
-          <p className="text-muted-foreground">Step 1 of 2: Basic Information</p>
+          <div className="space-y-2">
+            <p className="text-muted-foreground">Step 1 of 2: Basic Information</p>
+            <Progress value={50} className="w-full max-w-xs mx-auto" />
+          </div>
         </div>
 
         <Card className="p-6">
@@ -172,6 +200,9 @@ export default function CompleteProfileProvider() {
                 accept="image/*"
                 onChange={(e) => setProfilePicture(e.target.files?.[0] || null)}
               />
+              <p className="text-sm text-muted-foreground">
+                Don't worry if upload fails - you can add this later in settings
+              </p>
             </div>
 
             <div className="space-y-4">
@@ -183,6 +214,8 @@ export default function CompleteProfileProvider() {
                     className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                       selectedSkills.includes(skill)
                         ? 'bg-primary text-primary-foreground border-primary'
+                        : selectedSkills.length >= 3
+                        ? 'opacity-50 cursor-not-allowed'
                         : 'hover:bg-accent'
                     }`}
                     onClick={() => handleSkillToggle(skill)}

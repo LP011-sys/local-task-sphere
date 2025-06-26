@@ -12,6 +12,7 @@ import ProviderDashboard from "./pages/ProviderDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import CompleteProfileCustomer from "./pages/CompleteProfileCustomer";
 import CompleteProfileProvider from "./pages/CompleteProfileProvider";
+import CompleteProfileProviderVerify from "./pages/CompleteProfileProviderVerify";
 import AuthCallbackPage from "./pages/AuthCallback";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -32,6 +33,7 @@ function App() {
             <Route path="/admin" element={<RequireAuth><AdminDashboard /></RequireAuth>} />
             <Route path="/complete-profile/customer" element={<RequireAuth><CompleteProfileCustomer /></RequireAuth>} />
             <Route path="/complete-profile/provider" element={<RequireAuth><CompleteProfileProvider /></RequireAuth>} />
+            <Route path="/complete-profile/provider/verify" element={<RequireAuth><CompleteProfileProviderVerify /></RequireAuth>} />
             
             {/* Add the auth callback route */}
             <Route path="/auth/callback" element={<AuthCallbackPage />} />

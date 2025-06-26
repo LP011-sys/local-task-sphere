@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, FileText } from "lucide-react";
+import { Loader2, Upload, FileText, ArrowLeft } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 export default function CompleteProfileProviderVerify() {
   const [user, setUser] = useState<any>(null);
@@ -41,20 +42,36 @@ export default function CompleteProfileProviderVerify() {
   }, [navigate]);
 
   const uploadDocument = async (file: File, type: 'id' | 'license') => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}/${type}_verification.${fileExt}`;
-    
-    const { error } = await supabase.storage
-      .from('documents')
-      .upload(fileName, file, { upsert: true });
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${type}_verification.${fileExt}`;
+      
+      // Try 'documents' bucket first, fallback to 'avatars' if it doesn't exist
+      let bucket = 'documents';
+      let { error } = await supabase.storage
+        .from(bucket)
+        .upload(fileName, file, { upsert: true });
 
-    if (error) throw error;
+      if (error && error.message.includes('Bucket not found')) {
+        console.log('Documents bucket not found, trying avatars bucket');
+        bucket = 'avatars';
+        const result = await supabase.storage
+          .from(bucket)
+          .upload(fileName, file, { upsert: true });
+        error = result.error;
+      }
 
-    const { data } = supabase.storage
-      .from('documents')
-      .getPublicUrl(fileName);
+      if (error) throw error;
 
-    return data.publicUrl;
+      const { data } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(fileName);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error(`Error uploading ${type} document:`, error);
+      throw error;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -68,11 +85,26 @@ export default function CompleteProfileProviderVerify() {
     setLoading(true);
 
     try {
-      const idUrl = await uploadDocument(idFile, 'id');
+      let idUrl = null;
       let licenseUrl = null;
       
+      try {
+        idUrl = await uploadDocument(idFile, 'id');
+      } catch (error) {
+        console.warn('ID upload failed, but continuing:', error);
+        toast({
+          title: "Document upload issue",
+          description: "We'll process your verification manually. You can continue using the platform.",
+          variant: "destructive"
+        });
+      }
+      
       if (licenseFile) {
-        licenseUrl = await uploadDocument(licenseFile, 'license');
+        try {
+          licenseUrl = await uploadDocument(licenseFile, 'license');
+        } catch (error) {
+          console.warn('License upload failed:', error);
+        }
       }
 
       // Update the app_users table
@@ -81,7 +113,7 @@ export default function CompleteProfileProviderVerify() {
         .update({
           id_verification_url: idUrl,
           drivers_license_url: licenseUrl,
-          has_submitted_id: true,
+          has_submitted_id: !!idUrl,
           profile_completed: true
         })
         .eq('auth_user_id', user.id);
@@ -89,14 +121,14 @@ export default function CompleteProfileProviderVerify() {
       if (error) throw error;
 
       toast({ 
-        title: "Verification documents submitted!", 
-        description: "Your profile is now complete. We'll review your documents shortly." 
+        title: "Profile completed!", 
+        description: idUrl ? "We'll review your documents shortly." : "You can upload documents later in your profile settings."
       });
       navigate("/dashboard/provider");
     } catch (error: any) {
-      console.error("Document upload error:", error);
+      console.error("Profile completion error:", error);
       toast({ 
-        title: "Error uploading documents", 
+        title: "Error completing profile", 
         description: error.message, 
         variant: "destructive" 
       });
@@ -117,6 +149,10 @@ export default function CompleteProfileProviderVerify() {
 
       if (error) throw error;
 
+      toast({ 
+        title: "Profile completed!", 
+        description: "You can upload verification documents later in your profile settings." 
+      });
       navigate("/dashboard/provider");
     } catch (error: any) {
       console.error("Skip error:", error);
@@ -135,9 +171,20 @@ export default function CompleteProfileProviderVerify() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-slate-100 p-4">
       <div className="max-w-2xl mx-auto space-y-6 py-8">
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-4">
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/complete-profile/provider")}
+            className="absolute left-4 top-8"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
           <h1 className="text-3xl font-bold text-primary">Document Verification</h1>
-          <p className="text-muted-foreground">Step 2 of 2: Upload your documents</p>
+          <div className="space-y-2">
+            <p className="text-muted-foreground">Step 2 of 2: Upload your documents</p>
+            <Progress value={100} className="w-full max-w-xs mx-auto" />
+          </div>
         </div>
 
         <Card className="p-6">
@@ -186,15 +233,21 @@ export default function CompleteProfileProviderVerify() {
               </ul>
             </div>
 
+            <div className="bg-amber-50 p-4 rounded-lg">
+              <p className="text-sm text-amber-800">
+                <strong>Note:</strong> If document upload fails due to technical issues, you can still continue and upload them later in your profile settings.
+              </p>
+            </div>
+
             <div className="flex gap-4">
               <Button type="submit" className="flex-1" disabled={loading}>
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Uploading...
+                    Processing...
                   </>
                 ) : (
-                  "Submit Documents"
+                  "Complete Profile"
                 )}
               </Button>
               
@@ -210,7 +263,7 @@ export default function CompleteProfileProviderVerify() {
             </div>
 
             <p className="text-xs text-muted-foreground text-center">
-              You can always upload documents later in your profile settings
+              You can always upload documents later in your profile settings to increase trust with customers
             </p>
           </form>
         </Card>
