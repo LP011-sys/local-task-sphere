@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 import RoleSelector from "@/components/signup/RoleSelector";
+import AuthCallback from "@/components/auth/AuthCallback";
 
 type Role = "customer" | "provider";
 
@@ -20,6 +21,7 @@ export default function AuthPage() {
   const [name, setName] = useState("");
   const [selectedRole, setSelectedRole] = useState<Role>("customer");
   const [loading, setLoading] = useState(false);
+  const [isProcessingAuth, setIsProcessingAuth] = useState(false);
   const navigate = useNavigate();
   const { redirectAfterAuth } = useAuthRedirect();
 
@@ -32,6 +34,63 @@ export default function AuthPage() {
       }
     };
     checkAuth();
+  }, [redirectAfterAuth]);
+
+  // Handle auth state changes for email confirmation and sign-in
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.id);
+      
+      if (event === 'SIGNED_IN' && session?.user) {
+        setIsProcessingAuth(true);
+        
+        try {
+          // Check if profile exists
+          const { data: existingProfile } = await supabase
+            .from('app_users')
+            .select('id, profile_completed')
+            .eq('auth_user_id', session.user.id)
+            .single();
+
+          // If no profile exists, create one with user metadata
+          if (!existingProfile) {
+            console.log('Creating profile for user:', session.user.id);
+            const userMetadata = session.user.user_metadata;
+            const userRole = userMetadata?.active_role || userMetadata?.roles?.[0] || 'customer';
+            const userRoles = userMetadata?.roles || [userRole];
+
+            const { error: profileError } = await supabase
+              .from('app_users')
+              .insert({
+                auth_user_id: session.user.id,
+                email: session.user.email,
+                name: userMetadata?.name || '',
+                roles: userRoles,
+                active_role: userRole,
+                role: userRole // For backward compatibility
+              });
+
+            if (profileError) {
+              console.error('Profile creation error:', profileError);
+              toast.error('Failed to create user profile');
+              return;
+            }
+
+            console.log('Profile created successfully with role:', userRole);
+          }
+
+          // Redirect after successful authentication and profile creation
+          await redirectAfterAuth();
+        } catch (error) {
+          console.error('Error handling auth state change:', error);
+          toast.error('Authentication error occurred');
+        } finally {
+          setIsProcessingAuth(false);
+        }
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [redirectAfterAuth]);
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -60,34 +119,12 @@ export default function AuthPage() {
 
       if (error) throw error;
 
-      if (data.user) {
-        console.log('User signed up successfully with metadata:', data.user.user_metadata);
-        
-        // Create profile with correct role
-        const { error: profileError } = await supabase
-          .from('app_users')
-          .insert({
-            auth_user_id: data.user.id,
-            email: data.user.email,
-            name,
-            roles: [selectedRole],
-            active_role: selectedRole,
-            role: selectedRole // For backward compatibility
-          });
-
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
-          // Don't throw here - the user is still created
-        }
-
-        toast.success("Account created successfully! Please check your email for verification.");
-        
-        // Redirect to appropriate onboarding based on role
-        if (selectedRole === 'provider') {
-          navigate('/complete-profile/provider');
-        } else {
-          navigate('/complete-profile/customer');
-        }
+      if (data.user && !data.session) {
+        // User needs to confirm email
+        toast.success("Account created! Please check your email for a confirmation link.");
+      } else if (data.session) {
+        // User is immediately signed in (email confirmation disabled)
+        toast.success("Account created successfully!");
       }
     } catch (error: any) {
       console.error('Sign up error:', error);
@@ -110,7 +147,6 @@ export default function AuthPage() {
       if (error) throw error;
 
       toast.success("Signed in successfully!");
-      await redirectAfterAuth();
     } catch (error: any) {
       console.error('Sign in error:', error);
       toast.error(error.message || "Failed to sign in");
@@ -119,8 +155,32 @@ export default function AuthPage() {
     }
   };
 
+  const handleAuthSuccess = async () => {
+    setIsProcessingAuth(true);
+    try {
+      await redirectAfterAuth();
+    } catch (error) {
+      console.error('Error redirecting after auth:', error);
+    } finally {
+      setIsProcessingAuth(false);
+    }
+  };
+
+  if (isProcessingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-blue-50 to-slate-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-lg text-muted-foreground">Processing authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-blue-50 to-slate-100 p-4">
+      <AuthCallback onAuthSuccess={handleAuthSuccess} />
+      
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-primary">Welcome</CardTitle>

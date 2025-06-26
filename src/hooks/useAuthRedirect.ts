@@ -29,9 +29,9 @@ export function useAuthRedirect() {
         
         // If no profile exists, check user metadata for role
         const userRole = user.user_metadata?.active_role || user.user_metadata?.roles?.[0] || 'customer';
-        console.log('Using metadata role:', userRole);
+        console.log('Using metadata role for redirect:', userRole);
         
-        // Redirect based on metadata role
+        // Redirect based on metadata role to complete profile
         if (userRole === "provider") {
           navigate("/complete-profile/provider");
         } else {
@@ -40,12 +40,12 @@ export function useAuthRedirect() {
         return;
       }
 
-      console.log('User profile:', profile);
+      console.log('User profile found:', profile);
 
       // Use active_role if available, otherwise fall back to first role, then default to customer
       const userRole = profile.active_role || profile.roles?.[0] || 'customer';
 
-      console.log('Redirecting to role:', userRole);
+      console.log('Redirecting to dashboard for role:', userRole);
 
       // Redirect based on role
       if (userRole === "customer") {
