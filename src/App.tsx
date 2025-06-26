@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -94,7 +95,7 @@ const App = () => (
                 </RequireAuth>
               } />
 
-              {/* All other public/user routes UNDER AppLayout with profile completion guard */}
+              {/* All other routes UNDER AppLayout */}
               <Route element={<AppLayout />}>
                 {/* Public routes */}
                 <Route index element={<Index />} />
@@ -174,18 +175,8 @@ const App = () => (
                   </RequireAuth>
                 } />
 
-                {/* Provider dashboard and routes */}
+                {/* Provider dashboard - Fixed to use single route */}
                 <Route path="/dashboard/provider" element={
-                  <RequireAuth>
-                    <RequireRole allowedRoles={["provider"]}>
-                      <RequireProfileCompletion>
-                        <ProviderDashboard />
-                      </RequireProfileCompletion>
-                    </RequireRole>
-                  </RequireAuth>
-                } />
-
-                <Route path="/dashboard" element={
                   <RequireAuth>
                     <RequireRole allowedRoles={["provider"]}>
                       <RequireProfileCompletion>

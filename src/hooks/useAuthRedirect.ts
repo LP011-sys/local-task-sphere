@@ -17,7 +17,7 @@ export function useAuthRedirect() {
 
       console.log('Redirecting user:', user.id);
 
-      // Get user profile to determine role - with retry logic
+      // Get user profile to determine role
       let profile = null;
       let attempts = 0;
       const maxAttempts = 3;
@@ -35,7 +35,6 @@ export function useAuthRedirect() {
           console.log(`Profile fetch attempt ${attempts + 1} failed:`, error);
           attempts++;
           if (attempts < maxAttempts) {
-            // Wait before retrying
             await new Promise(resolve => setTimeout(resolve, 1000));
           }
         }
@@ -43,7 +42,6 @@ export function useAuthRedirect() {
 
       if (!profile) {
         console.error('Could not find user profile after', maxAttempts, 'attempts');
-        // Default to customer dashboard if profile not found
         navigate("/dashboard/customer");
         return;
       }

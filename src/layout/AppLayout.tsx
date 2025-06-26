@@ -19,12 +19,13 @@ export default function AppLayout() {
   // Role-specific navigation links
   const roleNavLinks = {
     customer: [
+      { path: "/dashboard/customer", label: t("dashboard") },
       { path: "/post-task", label: t("postTask") },
       { path: "/offers", label: t("offers") },
       { path: "/favorites", label: t("favorites") },
     ],
     provider: [
-      { path: "/dashboard", label: t("dashboard") },
+      { path: "/dashboard/provider", label: t("dashboard") },
     ],
     admin: [
       { path: "/admin", label: "Admin Dashboard" },
