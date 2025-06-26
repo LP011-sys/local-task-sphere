@@ -10,17 +10,50 @@ export function useAuthRedirect() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      if (!user) return;
+      if (!user) {
+        console.log('No user found for redirect');
+        return;
+      }
 
-      // Get user profile to determine role
-      const { data: profile } = await supabase
-        .from("app_users")
-        .select("role, roles, active_role")
-        .eq("auth_user_id", user.id)
-        .single();
+      console.log('Redirecting user:', user.id);
+
+      // Get user profile to determine role - with retry logic
+      let profile = null;
+      let attempts = 0;
+      const maxAttempts = 3;
+
+      while (!profile && attempts < maxAttempts) {
+        const { data, error } = await supabase
+          .from("app_users")
+          .select("role, roles, active_role")
+          .eq("auth_user_id", user.id)
+          .single();
+
+        if (data) {
+          profile = data;
+        } else if (error) {
+          console.log(`Profile fetch attempt ${attempts + 1} failed:`, error);
+          attempts++;
+          if (attempts < maxAttempts) {
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+      }
+
+      if (!profile) {
+        console.error('Could not find user profile after', maxAttempts, 'attempts');
+        // Default to customer dashboard if profile not found
+        navigate("/dashboard/customer");
+        return;
+      }
+
+      console.log('User profile:', profile);
 
       // Use active_role if available, otherwise fall back to role
-      const userRole = profile?.active_role || profile?.role;
+      const userRole = profile.active_role || profile.role;
+
+      console.log('Redirecting to role:', userRole);
 
       // Redirect based on active role
       if (userRole === "customer") {

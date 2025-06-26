@@ -32,41 +32,71 @@ export default function AuthPage() {
       }
     });
 
-    // Listen for auth state changes to handle email confirmation
+    // Listen for auth state changes to handle email confirmation and profile creation
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state change:', event, session?.user?.id);
+      
       if (event === 'SIGNED_IN' && session?.user) {
-        // Check if user profile exists, if not create it
-        const { data: existingProfile } = await supabase
-          .from('app_users')
-          .select('id')
-          .eq('auth_user_id', session.user.id)
-          .single();
-
-        if (!existingProfile) {
-          // Create user profile with role information
-          const userMetadata = session.user.user_metadata;
-          const roles = userMetadata?.roles || ['customer'];
-          const activeRole = userMetadata?.active_role || roles[0];
-
-          await supabase
+        try {
+          // Check if user profile exists
+          const { data: existingProfile, error: profileError } = await supabase
             .from('app_users')
-            .insert({
-              auth_user_id: session.user.id,
-              email: session.user.email,
-              name: session.user.user_metadata?.full_name || null,
-              role: activeRole,
-              roles: roles,
-              active_role: activeRole
-            });
-        }
+            .select('id, role, roles, active_role')
+            .eq('auth_user_id', session.user.id)
+            .single();
 
-        // Redirect after successful auth
-        await redirectAfterAuth();
+          console.log('Existing profile:', existingProfile, 'Error:', profileError);
+
+          if (!existingProfile) {
+            // Create user profile with role information from metadata or default to customer
+            const userMetadata = session.user.user_metadata || {};
+            const roles = userMetadata.roles || ['customer'];
+            const activeRole = userMetadata.active_role || roles[0] || 'customer';
+
+            console.log('Creating profile with roles:', roles, 'active_role:', activeRole);
+
+            const { error: insertError } = await supabase
+              .from('app_users')
+              .insert({
+                auth_user_id: session.user.id,
+                email: session.user.email,
+                name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || null,
+                role: activeRole,
+                roles: roles,
+                active_role: activeRole
+              });
+
+            if (insertError) {
+              console.error('Profile creation error:', insertError);
+              toast({ 
+                title: "Profile creation failed", 
+                description: insertError.message, 
+                variant: "destructive" 
+              });
+              return;
+            }
+
+            console.log('Profile created successfully');
+          }
+
+          // Small delay to ensure profile is fully created
+          setTimeout(() => {
+            redirectAfterAuth();
+          }, 500);
+
+        } catch (error) {
+          console.error('Error handling auth state change:', error);
+          toast({ 
+            title: "Authentication error", 
+            description: "There was an issue setting up your profile", 
+            variant: "destructive" 
+          });
+        }
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [redirectAfterAuth]);
+  }, [redirectAfterAuth, toast]);
 
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
