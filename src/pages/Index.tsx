@@ -7,8 +7,6 @@ import CustomerOffersTable from "./components/CustomerOffersTable";
 import CustomerFavoritesTable from "./components/CustomerFavoritesTable";
 import IndexHero from "./IndexHero";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import AuthCallback from "@/components/auth/AuthCallback";
-import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 import { Link } from "react-router-dom";
 
 function useAuthState() {
@@ -34,23 +32,10 @@ function useAuthState() {
 
 export default function Index() {
   const { authed } = useAuthState();
-  const { redirectAfterAuth } = useAuthRedirect();
-
-  const handleAuthSuccess = async () => {
-    console.log('Index: Auth success callback triggered');
-    try {
-      await redirectAfterAuth();
-    } catch (error) {
-      console.error('Index: Error redirecting after auth:', error);
-    }
-  };
 
   return (
     <I18nProvider>
       <div className="min-h-screen bg-gradient-to-br from-white via-primary-50 to-slate-100 flex flex-col">
-        {/* AuthCallback for handling email confirmations that land on root */}
-        <AuthCallback onAuthSuccess={handleAuthSuccess} />
-        
         {/* Hero section always visible */}
         <IndexHero authed={authed} />
         

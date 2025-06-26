@@ -22,6 +22,7 @@ export default function AuthPage() {
   const [selectedRole, setSelectedRole] = useState<Role>("customer");
   const [loading, setLoading] = useState(false);
   const [isProcessingAuth, setIsProcessingAuth] = useState(false);
+  const [processingTimeout, setProcessingTimeout] = useState<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
   const { redirectAfterAuth } = useAuthRedirect();
 
@@ -38,61 +39,33 @@ export default function AuthPage() {
     checkAuth();
   }, [redirectAfterAuth]);
 
-  // Handle auth state changes for email confirmation and sign-in
+  // Handle auth state changes for regular sign-in (not email confirmation)
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('AuthPage: Auth state changed:', event, session?.user?.id);
       
-      if (event === 'SIGNED_IN' && session?.user) {
-        console.log('AuthPage: User signed in, processing...');
+      // Only handle SIGNED_IN events that are NOT from email confirmation
+      if (event === 'SIGNED_IN' && session?.user && !window.location.hash.includes('access_token')) {
+        console.log('AuthPage: Regular sign-in detected, processing...');
         setIsProcessingAuth(true);
         
+        // Set timeout protection
+        const timeout = setTimeout(() => {
+          console.warn('AuthPage: Processing timeout reached, clearing state');
+          setIsProcessingAuth(false);
+          toast.error('Authentication took too long. Please try again.');
+        }, 8000);
+        
+        setProcessingTimeout(timeout);
+        
         try {
-          // Check if profile exists
-          const { data: existingProfile } = await supabase
-            .from('app_users')
-            .select('id, profile_completed')
-            .eq('auth_user_id', session.user.id)
-            .single();
-
-          console.log('AuthPage: Existing profile check:', existingProfile);
-
-          // If no profile exists, create one with user metadata
-          if (!existingProfile) {
-            console.log('AuthPage: Creating profile for user:', session.user.id);
-            const userMetadata = session.user.user_metadata;
-            const userRole = userMetadata?.active_role || userMetadata?.roles?.[0] || 'customer';
-            const userRoles = userMetadata?.roles || [userRole];
-
-            console.log('AuthPage: Creating profile with role:', userRole, 'and roles:', userRoles);
-
-            const { error: profileError } = await supabase
-              .from('app_users')
-              .insert({
-                auth_user_id: session.user.id,
-                email: session.user.email,
-                name: userMetadata?.name || '',
-                roles: userRoles,
-                active_role: userRole,
-                role: userRole // For backward compatibility
-              });
-
-            if (profileError) {
-              console.error('AuthPage: Profile creation error:', profileError);
-              toast.error('Failed to create user profile: ' + profileError.message);
-              return;
-            }
-
-            console.log('AuthPage: Profile created successfully with role:', userRole);
-          }
-
-          // Redirect after successful authentication and profile creation
-          console.log('AuthPage: Triggering redirect after auth');
+          console.log('AuthPage: Triggering redirect after regular sign-in');
           await redirectAfterAuth();
         } catch (error) {
-          console.error('AuthPage: Error handling auth state change:', error);
+          console.error('AuthPage: Error handling regular sign-in:', error);
           toast.error('Authentication error occurred');
         } finally {
+          clearTimeout(timeout);
           setIsProcessingAuth(false);
         }
       }
@@ -100,6 +73,15 @@ export default function AuthPage() {
 
     return () => subscription.unsubscribe();
   }, [redirectAfterAuth]);
+
+  // Clear processing timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (processingTimeout) {
+        clearTimeout(processingTimeout);
+      }
+    };
+  }, [processingTimeout]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,6 +120,7 @@ export default function AuthPage() {
         // User is immediately signed in (email confirmation disabled)
         console.log('AuthPage: User immediately signed in');
         toast.success("Account created successfully!");
+        // The auth state change will handle the redirect
       }
     } catch (error: any) {
       console.error('AuthPage: Sign up error:', error);
@@ -162,6 +145,7 @@ export default function AuthPage() {
 
       console.log('AuthPage: Sign in successful');
       toast.success("Signed in successfully!");
+      // The auth state change will handle the redirect
     } catch (error: any) {
       console.error('AuthPage: Sign in error:', error);
       toast.error(error.message || "Failed to sign in");
@@ -170,24 +154,60 @@ export default function AuthPage() {
     }
   };
 
-  const handleAuthSuccess = async () => {
-    console.log('AuthPage: Auth success callback triggered');
-    setIsProcessingAuth(true);
-    try {
-      await redirectAfterAuth();
-    } catch (error) {
-      console.error('AuthPage: Error redirecting after auth:', error);
-    } finally {
-      setIsProcessingAuth(false);
+  const handleAuthSuccess = () => {
+    console.log('AuthPage: Auth success callback triggered from AuthCallback');
+    // Clear processing state when auth callback completes
+    setIsProcessingAuth(false);
+    if (processingTimeout) {
+      clearTimeout(processingTimeout);
     }
+  };
+
+  const handleRetryAuth = async () => {
+    console.log('AuthPage: Retrying authentication');
+    setIsProcessingAuth(false);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await redirectAfterAuth();
+      } else {
+        toast.error('No active session found. Please sign in again.');
+      }
+    } catch (error) {
+      console.error('AuthPage: Retry auth error:', error);
+      toast.error('Failed to retry authentication');
+    }
+  };
+
+  const handleForceSignOut = async () => {
+    console.log('AuthPage: Force signing out');
+    setIsProcessingAuth(false);
+    await supabase.auth.signOut();
+    toast.info('Signed out. Please try signing in again.');
   };
 
   if (isProcessingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-blue-50 to-slate-100">
-        <div className="text-center">
+        <div className="text-center max-w-md">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-lg text-muted-foreground">Processing authentication...</p>
+          <p className="text-lg text-muted-foreground mb-4">Processing authentication...</p>
+          <div className="space-y-2">
+            <Button 
+              variant="outline" 
+              onClick={handleRetryAuth}
+              className="w-full"
+            >
+              Retry Authentication
+            </Button>
+            <Button 
+              variant="ghost" 
+              onClick={handleForceSignOut}
+              className="w-full text-sm"
+            >
+              Sign Out & Try Again
+            </Button>
+          </div>
         </div>
       </div>
     );
