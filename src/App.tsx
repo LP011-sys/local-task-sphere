@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -33,6 +32,10 @@ import ReferralPage from "@/pages/ReferralPage";
 import RequireAuth from "@/components/auth/RequireAuth";
 import RequireRole from "@/components/auth/RequireRole";
 import { RequireAdmin } from "@/components/auth/RequireAdmin";
+import CompleteProfileCustomer from "@/pages/CompleteProfileCustomer";
+import CompleteProfileProvider from "@/pages/CompleteProfileProvider";
+import CompleteProfileProviderVerify from "@/pages/CompleteProfileProviderVerify";
+import RequireProfileCompletion from "@/components/auth/RequireProfileCompletion";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +51,23 @@ const App = () => (
               {/* Authentication and onboarding routes NOT using AppLayout */}
               <Route path="/onboarding" element={<OnboardingPage />} />
               <Route path="/auth" element={<AuthPage />} />
+              
+              {/* Profile completion routes */}
+              <Route path="/complete-profile/customer" element={
+                <RequireAuth>
+                  <CompleteProfileCustomer />
+                </RequireAuth>
+              } />
+              <Route path="/complete-profile/provider" element={
+                <RequireAuth>
+                  <CompleteProfileProvider />
+                </RequireAuth>
+              } />
+              <Route path="/complete-profile/provider/verify" element={
+                <RequireAuth>
+                  <CompleteProfileProviderVerify />
+                </RequireAuth>
+              } />
 
               {/* Admin dashboard route - Admin only */}
               <Route path="/admin" element={
@@ -74,34 +94,42 @@ const App = () => (
                 </RequireAuth>
               } />
 
-              {/* All other public/user routes UNDER AppLayout */}
+              {/* All other public/user routes UNDER AppLayout with profile completion guard */}
               <Route element={<AppLayout />}>
                 {/* Public routes */}
                 <Route index element={<Index />} />
                 <Route path="/premium" element={<PremiumPackages />} />
                 
-                {/* Protected routes that require authentication */}
+                {/* Protected routes that require authentication and profile completion */}
                 <Route path="/profile" element={
                   <RequireAuth>
-                    <ProfileSettings />
+                    <RequireProfileCompletion>
+                      <ProfileSettings />
+                    </RequireProfileCompletion>
                   </RequireAuth>
                 } />
                 
                 <Route path="/chat" element={
                   <RequireAuth>
-                    <Chat />
+                    <RequireProfileCompletion>
+                      <Chat />
+                    </RequireProfileCompletion>
                   </RequireAuth>
                 } />
                 
                 <Route path="/review" element={
                   <RequireAuth>
-                    <LeaveReview />
+                    <RequireProfileCompletion>
+                      <LeaveReview />
+                    </RequireProfileCompletion>
                   </RequireAuth>
                 } />
 
                 <Route path="/referral" element={
                   <RequireAuth>
-                    <ReferralPage />
+                    <RequireProfileCompletion>
+                      <ReferralPage />
+                    </RequireProfileCompletion>
                   </RequireAuth>
                 } />
 
@@ -109,7 +137,9 @@ const App = () => (
                 <Route path="/dashboard/customer" element={
                   <RequireAuth>
                     <RequireRole allowedRoles={["customer"]}>
-                      <CustomerDashboard />
+                      <RequireProfileCompletion>
+                        <CustomerDashboard />
+                      </RequireProfileCompletion>
                     </RequireRole>
                   </RequireAuth>
                 } />
@@ -117,7 +147,9 @@ const App = () => (
                 <Route path="/post-task" element={
                   <RequireAuth>
                     <RequireRole allowedRoles={["customer"]}>
-                      <TaskCreationWizardPage />
+                      <RequireProfileCompletion>
+                        <TaskCreationWizardPage />
+                      </RequireProfileCompletion>
                     </RequireRole>
                   </RequireAuth>
                 } />
@@ -125,7 +157,9 @@ const App = () => (
                 <Route path="/offers" element={
                   <RequireAuth>
                     <RequireRole allowedRoles={["customer"]}>
-                      <CustomerOffers />
+                      <RequireProfileCompletion>
+                        <CustomerOffers />
+                      </RequireProfileCompletion>
                     </RequireRole>
                   </RequireAuth>
                 } />
@@ -133,7 +167,9 @@ const App = () => (
                 <Route path="/favorites" element={
                   <RequireAuth>
                     <RequireRole allowedRoles={["customer"]}>
-                      <MyFavorites />
+                      <RequireProfileCompletion>
+                        <MyFavorites />
+                      </RequireProfileCompletion>
                     </RequireRole>
                   </RequireAuth>
                 } />
@@ -142,7 +178,9 @@ const App = () => (
                 <Route path="/dashboard/provider" element={
                   <RequireAuth>
                     <RequireRole allowedRoles={["provider"]}>
-                      <ProviderDashboard />
+                      <RequireProfileCompletion>
+                        <ProviderDashboard />
+                      </RequireProfileCompletion>
                     </RequireRole>
                   </RequireAuth>
                 } />
@@ -150,7 +188,9 @@ const App = () => (
                 <Route path="/dashboard" element={
                   <RequireAuth>
                     <RequireRole allowedRoles={["provider"]}>
-                      <ProviderDashboard />
+                      <RequireProfileCompletion>
+                        <ProviderDashboard />
+                      </RequireProfileCompletion>
                     </RequireRole>
                   </RequireAuth>
                 } />

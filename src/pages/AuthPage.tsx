@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,7 +40,7 @@ export default function AuthPage() {
           // Check if user profile exists
           const { data: existingProfile, error: profileError } = await supabase
             .from('app_users')
-            .select('id, role, roles, active_role')
+            .select('id, role, roles, active_role, profile_completed, basic_profile_completed')
             .eq('auth_user_id', session.user.id)
             .single();
 
@@ -63,7 +62,9 @@ export default function AuthPage() {
                 name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || null,
                 role: activeRole,
                 roles: roles,
-                active_role: activeRole
+                active_role: activeRole,
+                profile_completed: false,
+                basic_profile_completed: false
               });
 
             if (insertError) {
@@ -77,12 +78,37 @@ export default function AuthPage() {
             }
 
             console.log('Profile created successfully');
+            
+            // Redirect to profile completion
+            setTimeout(() => {
+              if (activeRole === 'customer') {
+                navigate('/complete-profile/customer');
+              } else if (activeRole === 'provider') {
+                navigate('/complete-profile/provider');
+              } else {
+                redirectAfterAuth();
+              }
+            }, 500);
+          } else {
+            // Profile exists, check if completed
+            if (!existingProfile.profile_completed) {
+              const userRole = existingProfile.active_role || existingProfile.role;
+              if (userRole === 'customer') {
+                navigate('/complete-profile/customer');
+              } else if (userRole === 'provider') {
+                if (!existingProfile.basic_profile_completed) {
+                  navigate('/complete-profile/provider');
+                } else {
+                  navigate('/complete-profile/provider/verify');
+                }
+              }
+            } else {
+              // Profile complete, redirect to dashboard
+              setTimeout(() => {
+                redirectAfterAuth();
+              }, 500);
+            }
           }
-
-          // Small delay to ensure profile is fully created
-          setTimeout(() => {
-            redirectAfterAuth();
-          }, 500);
 
         } catch (error) {
           console.error('Error handling auth state change:', error);
@@ -96,7 +122,7 @@ export default function AuthPage() {
     });
 
     return () => subscription.unsubscribe();
-  }, [redirectAfterAuth, toast]);
+  }, [redirectAfterAuth, toast, navigate]);
 
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
