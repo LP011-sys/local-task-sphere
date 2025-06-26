@@ -6,6 +6,7 @@ import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LanguageButtons from "@/components/LanguageButtons";
 import AdminRoleSwitcher from "@/components/AdminRoleSwitcher";
+import ProfileAvatar from "@/components/ProfileAvatar";
 import { useAdminRole } from "@/contexts/AdminRoleContext";
 
 interface HeaderProps {
@@ -71,11 +72,15 @@ export default function Header({ navLinks }: HeaderProps) {
           )}
           
           <LanguageButtons compact />
+          
+          {/* Profile Avatar */}
+          <ProfileAvatar />
         </div>
 
         {/* Mobile Menu Button */}
         <div className="flex lg:hidden items-center gap-2">
           {isAdmin && <AdminRoleSwitcher />}
+          <ProfileAvatar />
           <Button
             variant="ghost"
             size="sm"
