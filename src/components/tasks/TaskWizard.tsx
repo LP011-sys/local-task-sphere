@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
@@ -107,22 +106,13 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
 
     setPosting(true);
     try {
-      // Get the authenticated user
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) {
-        throw new Error("Not authenticated");
-      }
+      // Ensure user profile exists and get the app_users.id
+      const { data: appUserId, error: profileError } = await supabase
+        .rpc('ensure_app_user_profile');
 
-      // Get the app_users record that corresponds to this auth user
-      const { data: appUser, error: userError } = await supabase
-        .from("app_users")
-        .select("id")
-        .eq("auth_user_id", user.id)
-        .single();
-
-      if (userError || !appUser) {
-        console.error("User lookup error:", userError);
-        throw new Error("User profile not found. Please complete your profile first.");
+      if (profileError || !appUserId) {
+        console.error("Profile creation error:", profileError);
+        throw new Error("Failed to create user profile. Please try again.");
       }
 
       const selectedBoost = BOOST_OPTIONS.find(opt => opt.value === form.boost);
@@ -131,7 +121,7 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
         : null;
 
       const payload = {
-        user_id: appUser.id, // Use the app_users.id instead of auth user id
+        user_id: appUserId,
         category: form.category,
         description: form.description,
         location: form.location ? form.location : null,

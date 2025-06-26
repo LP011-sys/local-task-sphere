@@ -24,10 +24,8 @@
   "appName": "Task Hub",
   "language": "Jezik",
   "home": "Početna",
-  "postTask": "Postavi zadatak",
   "inbox": "Poruke",
   "favorites": "Omiljeni",
-  "profile": "Profil",
   "loading": "Učitavanje...",
   "error": "Greška",
   "success": "Uspeh",
@@ -47,5 +45,8 @@
   "showingResults": "Prikazuje {{from}}-{{to}} od {{total}} rezultata",
   "noResults": "Nema rezultata",
   "tryAgain": "Pokušaj ponovo",
-  "refresh": "Osveži"
+  "refresh": "Osveži",
+  "chat": "Razgovor",
+  "referral": "Preporuke",
+  "review": "Recenzije"
 }

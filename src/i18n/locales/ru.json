@@ -24,10 +24,8 @@
   "appName": "Task Hub",
   "language": "Язык",
   "home": "Главная",
-  "postTask": "Создать задание",
   "inbox": "Входящие",
   "favorites": "Избранное",
-  "profile": "Профиль",
   "loading": "Загрузка...",
   "error": "Ошибка",
   "success": "Успех",
@@ -47,5 +45,8 @@
   "showingResults": "Показано {{from}}-{{to}} из {{total}} результатов",
   "noResults": "Результаты не найдены",
   "tryAgain": "Попробовать снова",
-  "refresh": "Обновить"
+  "refresh": "Обновить",
+  "chat": "Чат",
+  "referral": "Рефералы",
+  "review": "Отзывы"
 }

@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -18,12 +18,35 @@ interface LanguageSelectorProps {
 
 export default function LanguageSelector({ variant = "select", showLabel = false }: LanguageSelectorProps) {
   const { i18n, t } = useTranslation();
+  const [currentLang, setCurrentLang] = useState(i18n.language);
+
+  // Listen for language changes
+  useEffect(() => {
+    const handleLanguageChange = () => {
+      setCurrentLang(i18n.language);
+    };
+
+    i18n.on('languageChanged', handleLanguageChange);
+    window.addEventListener('languageChanged', handleLanguageChange);
+
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange);
+      window.removeEventListener('languageChanged', handleLanguageChange);
+    };
+  }, [i18n]);
 
   const handleLanguageChange = async (languageCode: string) => {
     try {
+      console.log(`Changing language from ${i18n.language} to ${languageCode}`);
       await i18n.changeLanguage(languageCode);
       localStorage.setItem('i18nextLng', languageCode);
-      console.log(`Language changed to: ${languageCode}`);
+      setCurrentLang(languageCode);
+      console.log(`Language changed successfully to: ${languageCode}`);
+      
+      // Force a page refresh if needed
+      if (i18n.language !== languageCode) {
+        window.location.reload();
+      }
     } catch (error) {
       console.error('Error changing language:', error);
     }
@@ -42,7 +65,7 @@ export default function LanguageSelector({ variant = "select", showLabel = false
           {languages.map((lang) => (
             <Button
               key={lang.code}
-              variant={i18n.language === lang.code ? "default" : "ghost"}
+              variant={currentLang === lang.code ? "default" : "ghost"}
               size="sm"
               onClick={() => handleLanguageChange(lang.code)}
               className="px-2 py-1 text-xs font-medium"
@@ -57,10 +80,10 @@ export default function LanguageSelector({ variant = "select", showLabel = false
 
   if (variant === "compact") {
     return (
-      <Select value={i18n.language} onValueChange={handleLanguageChange}>
+      <Select value={currentLang} onValueChange={handleLanguageChange}>
         <SelectTrigger className="w-16 h-8 text-xs border-none shadow-none">
           <SelectValue>
-            {languages.find(l => l.code === i18n.language)?.flag}
+            {languages.find(l => l.code === currentLang)?.flag}
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
@@ -82,7 +105,7 @@ export default function LanguageSelector({ variant = "select", showLabel = false
           {t("language")}:
         </span>
       )}
-      <Select value={i18n.language} onValueChange={handleLanguageChange}>
+      <Select value={currentLang} onValueChange={handleLanguageChange}>
         <SelectTrigger className="w-40">
           <SelectValue />
         </SelectTrigger>

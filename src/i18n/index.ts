@@ -26,7 +26,7 @@ i18n
   .init({
     resources,
     fallbackLng: 'en',
-    debug: false,
+    debug: true, // Enable debug to see what's happening
     
     interpolation: {
       escapeValue: false,
@@ -44,5 +44,14 @@ i18n
       useSuspense: false,
     }
   });
+
+// Add event listener to force re-render when language changes
+i18n.on('languageChanged', (lng) => {
+  console.log('Language changed to:', lng);
+  // Force a small delay to ensure all components re-render
+  setTimeout(() => {
+    window.dispatchEvent(new Event('languageChanged'));
+  }, 50);
+});
 
 export default i18n;
