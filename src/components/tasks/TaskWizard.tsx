@@ -114,6 +114,8 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
         throw new Error("You must be logged in to post a task");
       }
 
+      console.log("Current auth user:", user.id);
+
       // Check if app_users record exists, create if it doesn't
       let { data: appUser, error: profileError } = await supabase
         .from("app_users")
@@ -121,8 +123,12 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
         .eq("auth_user_id", user.id)
         .single();
 
+      console.log("App user lookup result:", { appUser, profileError });
+
       // If no profile exists, create one
       if (profileError && profileError.code === 'PGRST116') {
+        console.log("Creating new app_users profile for auth user:", user.id);
+        
         const { data: newProfile, error: createError } = await supabase
           .from("app_users")
           .insert({
@@ -142,6 +148,7 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
           throw new Error("Failed to create user profile. Please try again.");
         }
         
+        console.log("Created new app_users profile:", newProfile);
         appUser = newProfile;
       } else if (profileError) {
         console.error("Profile fetch error:", profileError);
@@ -152,13 +159,15 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
         throw new Error("Unable to get user profile ID");
       }
 
+      console.log("Using app_users ID for task:", appUser.id);
+
       const selectedBoost = BOOST_OPTIONS.find(opt => opt.value === form.boost);
       const boostExpiresAt = selectedBoost && selectedBoost.duration > 0 
         ? new Date(Date.now() + selectedBoost.duration * 60 * 60 * 1000).toISOString()
         : null;
 
       const payload = {
-        user_id: appUser.id as string,
+        user_id: String(appUser.id), // Ensure it's a string
         category: form.category,
         description: form.description,
         location: form.location ? form.location : null,
@@ -172,8 +181,13 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
         boost_amount: selectedBoost ? selectedBoost.price : 0,
       };
 
+      console.log("Task payload:", payload);
+
       const { error } = await supabase.from("Tasks").insert(payload);
-      if (error) throw error;
+      if (error) {
+        console.error("Task insertion error:", error);
+        throw error;
+      }
       
       const boostMessage = selectedBoost && selectedBoost.price > 0 
         ? ` Your task has been boosted for ${selectedBoost.duration} hours!`
