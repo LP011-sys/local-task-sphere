@@ -5,10 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Eye, Heart, Clock, CheckCircle } from "lucide-react";
 import AdminRoleSwitcher from "@/components/AdminRoleSwitcher";
-import LoadingSpinner from "@/components/LoadingSpinner";
+import CustomerTasksTable from "@/pages/components/CustomerTasksTable";
+import { useUserTasks } from "@/hooks/useUserTasks";
 
 export default function CustomerDashboard() {
   const navigate = useNavigate();
+  const { data: userTasks = [], isLoading } = useUserTasks();
+
+  // Calculate real stats from user's tasks
+  const activeTasks = userTasks.filter(task => task.status === 'open' || task.status === 'in_progress').length;
+  const completedTasks = userTasks.filter(task => task.status === 'completed').length;
 
   return (
     <div className="space-y-8">
@@ -41,7 +47,7 @@ export default function CustomerDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-blue-600">Active Tasks</p>
-                <p className="text-2xl font-bold text-blue-900">3</p>
+                <p className="text-2xl font-bold text-blue-900">{isLoading ? "..." : activeTasks}</p>
               </div>
               <Clock className="w-8 h-8 text-blue-500" />
             </div>
@@ -53,7 +59,7 @@ export default function CustomerDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-green-600">Completed</p>
-                <p className="text-2xl font-bold text-green-900">12</p>
+                <p className="text-2xl font-bold text-green-900">{isLoading ? "..." : completedTasks}</p>
               </div>
               <CheckCircle className="w-8 h-8 text-green-500" />
             </div>
@@ -64,8 +70,8 @@ export default function CustomerDashboard() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-orange-600">New Offers</p>
-                <p className="text-2xl font-bold text-orange-900">5</p>
+                <p className="text-sm font-medium text-orange-600">Total Tasks</p>
+                <p className="text-2xl font-bold text-orange-900">{isLoading ? "..." : userTasks.length}</p>
               </div>
               <Eye className="w-8 h-8 text-orange-500" />
             </div>
@@ -76,13 +82,50 @@ export default function CustomerDashboard() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-purple-600">Favorites</p>
-                <p className="text-2xl font-bold text-purple-900">8</p>
+                <p className="text-sm font-medium text-purple-600">Draft Tasks</p>
+                <p className="text-2xl font-bold text-purple-900">0</p>
               </div>
               <Heart className="w-8 h-8 text-purple-500" />
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* My Tasks Section */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold">My Tasks</h2>
+          {userTasks.length > 0 && (
+            <Button onClick={() => navigate("/post-task")} variant="outline">
+              <Plus className="w-4 h-4 mr-2" />
+              Post Another Task
+            </Button>
+          )}
+        </div>
+        
+        {userTasks.length === 0 && !isLoading ? (
+          <Card className="p-8 text-center">
+            <CardContent>
+              <div className="space-y-4">
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                  <Plus className="w-8 h-8 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">No tasks yet</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Start by posting your first task to connect with qualified providers
+                  </p>
+                  <Button onClick={() => navigate("/post-task")}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Post Your First Task
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <CustomerTasksTable />
+        )}
       </div>
 
       {/* Main Action Cards */}

@@ -1,12 +1,12 @@
 
 import React from 'react';
 import { Table, TableHeader, TableRow, TableHead, TableCell, TableBody } from '@/components/ui/table';
-import { useTasks } from "@/hooks/useTasks";
+import { useUserTasks } from "@/hooks/useUserTasks";
 import QueryWrapper from "@/components/QueryWrapper";
 import TableSkeleton from "@/components/TableSkeleton";
 
 export default function CustomerTasksTable() {
-  const { data, isLoading, error, refetch } = useTasks();
+  const { data, isLoading, error, refetch } = useUserTasks();
 
   const loadingSkeleton = (
     <TableSkeleton 
@@ -39,7 +39,7 @@ export default function CustomerTasksTable() {
       emptyState={emptyState}
     >
       <div className="rounded-xl bg-white/90 shadow p-4 overflow-x-auto">
-        <h3 className="font-bold text-lg mb-1">Tasks</h3>
+        <h3 className="font-bold text-lg mb-1">My Tasks</h3>
         <Table>
           <TableHeader>
             <TableRow>
@@ -51,24 +51,25 @@ export default function CustomerTasksTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {(data ?? []).slice(0, 6).map((t: any) => (
-              <TableRow key={t.id}>
-                <TableCell>{t.offer || t.description}</TableCell>
+            {(data ?? []).map((task: any) => (
+              <TableRow key={task.id}>
+                <TableCell>{task.offer || task.description}</TableCell>
                 <TableCell>
                   <span 
-                    className={`px-2 py-1 rounded text-caption font-medium ${
-                      t.status === 'completed' ? 'bg-green-100 text-green-800' :
-                      t.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                    className={`px-2 py-1 rounded text-xs font-medium ${
+                      task.status === 'completed' ? 'bg-green-100 text-green-800' :
+                      task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                      task.status === 'open' ? 'bg-yellow-100 text-yellow-800' :
                       'bg-gray-100 text-gray-800'
                     }`}
-                    aria-label={`Task status: ${t.status}`}
+                    aria-label={`Task status: ${task.status}`}
                   >
-                    {t.status}
+                    {task.status}
                   </span>
                 </TableCell>
-                <TableCell>{t.category}</TableCell>
-                <TableCell>€{t.price}</TableCell>
-                <TableCell>{t.deadline ? new Date(t.deadline).toLocaleString() : "-"}</TableCell>
+                <TableCell>{task.category}</TableCell>
+                <TableCell>€{task.price}</TableCell>
+                <TableCell>{task.deadline ? new Date(task.deadline).toLocaleDateString() : "-"}</TableCell>
               </TableRow>
             ))}
           </TableBody>
