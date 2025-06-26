@@ -30,7 +30,7 @@ export function UserRoleProvider({ children }: { children: React.ReactNode }) {
 
       console.log("Fetching user role data for:", user.email);
 
-      const { data: profile } = await supabase
+      const { data: profile, error } = await supabase
         .from("app_users")
         .select("roles, active_role")
         .eq("auth_user_id", user.id)
@@ -47,6 +47,34 @@ export function UserRoleProvider({ children }: { children: React.ReactNode }) {
         setIsAdmin(userRoles.includes("admin"));
         
         console.log("Set roles:", { availableRoles: userRoles, currentRole: activeRole, isAdmin: userRoles.includes("admin") });
+      } else if (error) {
+        console.log("Profile not found, checking user metadata:", user.user_metadata);
+        
+        // If profile doesn't exist, check user metadata and create profile
+        const metadataRoles = user.user_metadata?.roles || ['customer'];
+        const metadataActiveRole = user.user_metadata?.active_role || 'customer';
+        
+        // Create profile with metadata values
+        const { error: insertError } = await supabase
+          .from('app_users')
+          .insert({
+            auth_user_id: user.id,
+            email: user.email,
+            name: user.user_metadata?.name || '',
+            roles: metadataRoles,
+            active_role: metadataActiveRole,
+            role: metadataActiveRole // For backward compatibility
+          });
+
+        if (insertError) {
+          console.error('Error creating profile:', insertError);
+        } else {
+          console.log('Created profile with metadata roles:', metadataRoles);
+        }
+        
+        setAvailableRoles(metadataRoles as Role[]);
+        setCurrentRole(metadataActiveRole as Role);
+        setIsAdmin(metadataRoles.includes("admin"));
       }
     } catch (error) {
       console.error("Error fetching user roles:", error);
