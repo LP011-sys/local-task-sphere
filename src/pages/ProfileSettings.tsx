@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { useUpdateCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
 import { useToast } from "@/hooks/use-toast";
-import { ReloadIcon } from "lucide-react"
+import { Loader2 } from "lucide-react"
 
 import RoleManagement from "@/components/RoleManagement";
 
@@ -27,8 +27,7 @@ export default function ProfileSettings() {
   const [session, setSession] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [name, setName] = useState('');
   const [bio, setBio] = useState('');
   const [phone, setPhone] = useState('');
   const { data: userProfile } = useCurrentUserProfile(session?.user?.id);
@@ -53,8 +52,7 @@ export default function ProfileSettings() {
 
   useEffect(() => {
     if (userProfile) {
-      setFirstName(userProfile.first_name || '');
-      setLastName(userProfile.last_name || '');
+      setName(userProfile.name || '');
       setBio(userProfile.bio || '');
       setPhone(userProfile.phone || '');
     }
@@ -69,8 +67,7 @@ export default function ProfileSettings() {
   const handleUpdateProfile = async () => {
     try {
       updateProfile({
-        first_name: firstName,
-        last_name: lastName,
+        name: name,
         bio: bio,
         phone: phone,
       });
@@ -102,25 +99,14 @@ export default function ProfileSettings() {
           <CardDescription>Update your basic profile details</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="first_name">First Name</Label>
-              <Input
-                id="first_name"
-                placeholder="Your first name"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="last_name">Last Name</Label>
-              <Input
-                id="last_name"
-                placeholder="Your last name"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="name">Full Name</Label>
+            <Input
+              id="name"
+              placeholder="Your full name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="phone">Phone Number</Label>
@@ -149,7 +135,7 @@ export default function ProfileSettings() {
 
       <div className="flex justify-end">
         <Button onClick={handleUpdateProfile} disabled={isUpdating}>
-          {isUpdating && <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />}
+          {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Update Profile
         </Button>
       </div>
