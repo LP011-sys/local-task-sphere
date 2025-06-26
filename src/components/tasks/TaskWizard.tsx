@@ -107,8 +107,23 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
 
     setPosting(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      // Get the authenticated user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        throw new Error("Not authenticated");
+      }
+
+      // Get the app_users record that corresponds to this auth user
+      const { data: appUser, error: userError } = await supabase
+        .from("app_users")
+        .select("id")
+        .eq("auth_user_id", user.id)
+        .single();
+
+      if (userError || !appUser) {
+        console.error("User lookup error:", userError);
+        throw new Error("User profile not found. Please complete your profile first.");
+      }
 
       const selectedBoost = BOOST_OPTIONS.find(opt => opt.value === form.boost);
       const boostExpiresAt = selectedBoost && selectedBoost.duration > 0 
@@ -116,7 +131,7 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
         : null;
 
       const payload = {
-        user_id: user.id,
+        user_id: appUser.id, // Use the app_users.id instead of auth user id
         category: form.category,
         description: form.description,
         location: form.location ? form.location : null,
@@ -148,7 +163,11 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
       navigate("/offers");
     } catch (e: any) {
       console.error("Task posting error:", e);
-      toast({ title: "Failed to post task", description: e.message, variant: "destructive" });
+      toast({ 
+        title: "Failed to post task", 
+        description: e.message || "An unexpected error occurred", 
+        variant: "destructive" 
+      });
     } finally {
       setPosting(false);
     }
