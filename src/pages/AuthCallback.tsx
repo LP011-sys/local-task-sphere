@@ -26,6 +26,7 @@ export default function AuthCallbackPage() {
 
         if (data.session?.user) {
           console.log('AuthCallbackPage: Email confirmed successfully for user:', data.session.user.id);
+          console.log('AuthCallbackPage: User metadata:', data.session.user.user_metadata);
           
           // Handle profile creation if needed
           await handleProfileCreation(data.session.user);
@@ -61,8 +62,12 @@ export default function AuthCallbackPage() {
         if (!existingProfile) {
           console.log('AuthCallbackPage: Creating profile for user:', user.id);
           const userMetadata = user.user_metadata;
+          
+          // Get role from metadata with proper fallback
           const userRole = userMetadata?.active_role || userMetadata?.roles?.[0] || 'customer';
           const userRoles = userMetadata?.roles || [userRole];
+
+          console.log('AuthCallbackPage: Creating profile with role:', userRole, 'roles:', userRoles);
 
           const { error: profileError } = await supabase
             .from('app_users')
@@ -80,8 +85,10 @@ export default function AuthCallbackPage() {
             // Don't throw - let the user proceed even if profile creation fails
             toast.error('Profile setup incomplete, please update your profile');
           } else {
-            console.log('AuthCallbackPage: Profile created successfully');
+            console.log('AuthCallbackPage: Profile created successfully with role:', userRole);
           }
+        } else {
+          console.log('AuthCallbackPage: Profile already exists for user:', user.id);
         }
       } catch (error) {
         console.error('AuthCallbackPage: Error in profile creation:', error);
@@ -104,16 +111,18 @@ export default function AuthCallbackPage() {
         
         if (profile) {
           userRole = profile.active_role || profile.roles?.[0] || 'customer';
+          console.log('AuthCallbackPage: Found profile role:', userRole);
         } else {
           // Fallback to metadata if no profile
           userRole = user.user_metadata?.active_role || user.user_metadata?.roles?.[0] || 'customer';
+          console.log('AuthCallbackPage: Using metadata role:', userRole);
         }
 
         console.log('AuthCallbackPage: Redirecting to dashboard for role:', userRole);
 
         // Redirect based on role
         if (userRole === "provider") {
-          navigate("/dashboard/provider", { replace: true });
+          navigate("/complete-profile/provider", { replace: true });
         } else if (userRole === "admin") {
           navigate("/admin", { replace: true });
         } else {

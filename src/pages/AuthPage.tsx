@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -108,7 +109,7 @@ export default function AuthPage() {
 
       if (error) throw error;
 
-      console.log('AuthPage: Sign up response:', { user: data.user?.id, session: !!data.session });
+      console.log('AuthPage: Sign up response:', { user: data.user?.id, session: !!data.session, role: selectedRole });
 
       if (data.user && !data.session) {
         // User needs to confirm email
@@ -300,7 +301,7 @@ export default function AuthPage() {
                 />
                 
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Creating account..." : "Sign Up"}
+                  {loading ? "Creating account..." : `Sign Up as ${selectedRole === 'customer' ? 'Customer' : 'Provider'}`}
                 </Button>
               </form>
             </TabsContent>
