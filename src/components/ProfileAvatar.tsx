@@ -14,7 +14,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { User, RefreshCw, LogOut } from 'lucide-react';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
-import { useAdminRole } from '@/contexts/AdminRoleContext';
+import { useUserRole } from '@/contexts/UserRoleContext';
 import { toast } from 'sonner';
 
 export default function ProfileAvatar() {
@@ -22,7 +22,7 @@ export default function ProfileAvatar() {
   const [session, setSession] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSwitching, setIsSwitching] = useState(false);
-  const { currentRole, switchRole } = useAdminRole();
+  const { currentRole, availableRoles, switchRole } = useUserRole();
   const { data: userProfile } = useCurrentUserProfile(session?.user?.id);
 
   useEffect(() => {
@@ -47,9 +47,8 @@ export default function ProfileAvatar() {
   }
 
   const user = session.user;
-  const userRoles = user.user_metadata?.roles || [];
-  const hasProviderRole = userRoles.includes('provider');
-  const hasCustomerRole = userRoles.includes('customer');
+  const hasProviderRole = availableRoles.includes('provider');
+  const hasCustomerRole = availableRoles.includes('customer');
   
   // Get user name for fallback
   const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
@@ -60,15 +59,7 @@ export default function ProfileAvatar() {
     
     setIsSwitching(true);
     try {
-      // Update active_role in user metadata
-      const { error } = await supabase.auth.updateUser({
-        data: { active_role: newRole }
-      });
-
-      if (error) throw error;
-
-      // Update local state using the context method
-      switchRole(newRole);
+      await switchRole(newRole);
       
       // Navigate to appropriate dashboard
       if (newRole === 'provider') {
@@ -76,11 +67,8 @@ export default function ProfileAvatar() {
       } else {
         navigate('/dashboard/customer');
       }
-
-      toast.success(`Switched to ${newRole} account`);
     } catch (error) {
       console.error('Error switching role:', error);
-      toast.error('Failed to switch account');
     } finally {
       setIsSwitching(false);
     }

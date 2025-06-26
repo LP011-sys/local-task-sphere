@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { I18nProvider } from "@/contexts/I18nContext";
 import { AdminRoleProvider } from "@/contexts/AdminRoleContext";
+import { UserRoleProvider } from "@/contexts/UserRoleContext";
 // Import i18n configuration
 import "./i18n";
 import Index from "./pages/Index";
@@ -30,6 +31,7 @@ import MyFavorites from "@/pages/MyFavorites";
 import ProfileSettings from "@/pages/ProfileSettings";
 import LeaveReview from "@/pages/LeaveReview";
 import ReferralPage from "@/pages/ReferralPage";
+import TasksPage from "@/pages/TasksPage";
 import RequireAuth from "@/components/auth/RequireAuth";
 import RequireRole from "@/components/auth/RequireRole";
 import { RequireAdmin } from "@/components/auth/RequireAdmin";
@@ -45,152 +47,163 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AdminRoleProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              {/* Authentication and onboarding routes NOT using AppLayout */}
-              <Route path="/onboarding" element={<OnboardingPage />} />
-              <Route path="/auth" element={<AuthPage />} />
-              
-              {/* Profile completion routes */}
-              <Route path="/complete-profile/customer" element={
-                <RequireAuth>
-                  <CompleteProfileCustomer />
-                </RequireAuth>
-              } />
-              <Route path="/complete-profile/provider" element={
-                <RequireAuth>
-                  <CompleteProfileProvider />
-                </RequireAuth>
-              } />
-              <Route path="/complete-profile/provider/verify" element={
-                <RequireAuth>
-                  <CompleteProfileProviderVerify />
-                </RequireAuth>
-              } />
-
-              {/* Admin dashboard route - Admin only */}
-              <Route path="/admin" element={
-                <RequireAuth>
-                  <RequireRole allowedRoles={["admin"]}>
-                    <AdminDashboard />
-                  </RequireRole>
-                </RequireAuth>
-              } />
-
-              {/* Admin nested routes - Admin only */}
-              <Route path="/admin/*" element={
-                <RequireAuth>
-                  <RequireRole allowedRoles={["admin"]}>
-                    <Routes>
-                      <Route index element={<Navigate to="/admin" replace />} />
-                      <Route path="users" element={<AdminUsersPage />} />
-                      <Route path="tasks" element={<AdminTasksPage />} />
-                      <Route path="reports" element={<AdminReportsPage />} />
-                      <Route path="analytics" element={<AdminAnalyticsPage />} />
-                      <Route path="push" element={<AdminPushPage />} />
-                    </Routes>
-                  </RequireRole>
-                </RequireAuth>
-              } />
-
-              {/* All other routes UNDER AppLayout */}
-              <Route element={<AppLayout />}>
-                {/* Public routes */}
-                <Route index element={<Index />} />
-                <Route path="/premium" element={<PremiumPackages />} />
+          <UserRoleProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                {/* Authentication and onboarding routes NOT using AppLayout */}
+                <Route path="/onboarding" element={<OnboardingPage />} />
+                <Route path="/auth" element={<AuthPage />} />
                 
-                {/* Protected routes that require authentication and profile completion */}
-                <Route path="/profile" element={
+                {/* Profile completion routes */}
+                <Route path="/complete-profile/customer" element={
                   <RequireAuth>
-                    <RequireProfileCompletion>
-                      <ProfileSettings />
-                    </RequireProfileCompletion>
+                    <CompleteProfileCustomer />
                   </RequireAuth>
                 } />
-                
-                <Route path="/chat" element={
+                <Route path="/complete-profile/provider" element={
                   <RequireAuth>
-                    <RequireProfileCompletion>
-                      <Chat />
-                    </RequireProfileCompletion>
+                    <CompleteProfileProvider />
                   </RequireAuth>
                 } />
-                
-                <Route path="/review" element={
+                <Route path="/complete-profile/provider/verify" element={
                   <RequireAuth>
-                    <RequireProfileCompletion>
-                      <LeaveReview />
-                    </RequireProfileCompletion>
+                    <CompleteProfileProviderVerify />
                   </RequireAuth>
                 } />
 
-                <Route path="/referral" element={
+                {/* Admin dashboard route - Admin only */}
+                <Route path="/admin" element={
                   <RequireAuth>
-                    <RequireProfileCompletion>
-                      <ReferralPage />
-                    </RequireProfileCompletion>
-                  </RequireAuth>
-                } />
-
-                {/* Customer dashboard and routes */}
-                <Route path="/dashboard/customer" element={
-                  <RequireAuth>
-                    <RequireRole allowedRoles={["customer"]}>
-                      <RequireProfileCompletion>
-                        <CustomerDashboard />
-                      </RequireProfileCompletion>
+                    <RequireRole allowedRoles={["admin"]}>
+                      <AdminDashboard />
                     </RequireRole>
                   </RequireAuth>
                 } />
 
-                <Route path="/post-task" element={
+                {/* Admin nested routes - Admin only */}
+                <Route path="/admin/*" element={
                   <RequireAuth>
-                    <RequireRole allowedRoles={["customer"]}>
-                      <RequireProfileCompletion>
-                        <TaskCreationWizardPage />
-                      </RequireProfileCompletion>
-                    </RequireRole>
-                  </RequireAuth>
-                } />
-                
-                <Route path="/offers" element={
-                  <RequireAuth>
-                    <RequireRole allowedRoles={["customer"]}>
-                      <RequireProfileCompletion>
-                        <CustomerOffers />
-                      </RequireProfileCompletion>
-                    </RequireRole>
-                  </RequireAuth>
-                } />
-                
-                <Route path="/favorites" element={
-                  <RequireAuth>
-                    <RequireRole allowedRoles={["customer"]}>
-                      <RequireProfileCompletion>
-                        <MyFavorites />
-                      </RequireProfileCompletion>
+                    <RequireRole allowedRoles={["admin"]}>
+                      <Routes>
+                        <Route index element={<Navigate to="/admin" replace />} />
+                        <Route path="users" element={<AdminUsersPage />} />
+                        <Route path="tasks" element={<AdminTasksPage />} />
+                        <Route path="reports" element={<AdminReportsPage />} />
+                        <Route path="analytics" element={<AdminAnalyticsPage />} />
+                        <Route path="push" element={<AdminPushPage />} />
+                      </Routes>
                     </RequireRole>
                   </RequireAuth>
                 } />
 
-                {/* Provider dashboard - Fixed to use single route */}
-                <Route path="/dashboard/provider" element={
-                  <RequireAuth>
-                    <RequireRole allowedRoles={["provider"]}>
+                {/* All other routes UNDER AppLayout */}
+                <Route element={<AppLayout />}>
+                  {/* Public routes */}
+                  <Route index element={<Index />} />
+                  <Route path="/premium" element={<PremiumPackages />} />
+                  
+                  {/* Universal task browsing - available to all authenticated users */}
+                  <Route path="/tasks" element={
+                    <RequireAuth>
                       <RequireProfileCompletion>
-                        <ProviderDashboard />
+                        <TasksPage />
                       </RequireProfileCompletion>
-                    </RequireRole>
-                  </RequireAuth>
-                } />
+                    </RequireAuth>
+                  } />
+                  
+                  {/* Protected routes that require authentication and profile completion */}
+                  <Route path="/profile" element={
+                    <RequireAuth>
+                      <RequireProfileCompletion>
+                        <ProfileSettings />
+                      </RequireProfileCompletion>
+                    </RequireAuth>
+                  } />
+                  
+                  <Route path="/chat" element={
+                    <RequireAuth>
+                      <RequireProfileCompletion>
+                        <Chat />
+                      </RequireProfileCompletion>
+                    </RequireAuth>
+                  } />
+                  
+                  <Route path="/review" element={
+                    <RequireAuth>
+                      <RequireProfileCompletion>
+                        <LeaveReview />
+                      </RequireProfileCompletion>
+                    </RequireAuth>
+                  } />
 
-                {/* 404 catch-all fallback */}
-                <Route path="*" element={<NotFound />} />
-              </Route>
-            </Routes>
-          </BrowserRouter>
+                  <Route path="/referral" element={
+                    <RequireAuth>
+                      <RequireProfileCompletion>
+                        <ReferralPage />
+                      </RequireProfileCompletion>
+                    </RequireAuth>
+                  } />
+
+                  {/* Customer dashboard and routes */}
+                  <Route path="/dashboard/customer" element={
+                    <RequireAuth>
+                      <RequireRole allowedRoles={["customer"]}>
+                        <RequireProfileCompletion>
+                          <CustomerDashboard />
+                        </RequireProfileCompletion>
+                      </RequireRole>
+                    </RequireAuth>
+                  } />
+
+                  <Route path="/post-task" element={
+                    <RequireAuth>
+                      <RequireRole allowedRoles={["customer"]}>
+                        <RequireProfileCompletion>
+                          <TaskCreationWizardPage />
+                        </RequireProfileCompletion>
+                      </RequireRole>
+                    </RequireAuth>
+                  } />
+                  
+                  <Route path="/offers" element={
+                    <RequireAuth>
+                      <RequireRole allowedRoles={["customer"]}>
+                        <RequireProfileCompletion>
+                          <CustomerOffers />
+                        </RequireProfileCompletion>
+                      </RequireRole>
+                    </RequireAuth>
+                  } />
+                  
+                  <Route path="/favorites" element={
+                    <RequireAuth>
+                      <RequireRole allowedRoles={["customer"]}>
+                        <RequireProfileCompletion>
+                          <MyFavorites />
+                        </RequireProfileCompletion>
+                      </RequireRole>
+                    </RequireAuth>
+                  } />
+
+                  {/* Provider dashboard - Fixed to use single route */}
+                  <Route path="/dashboard/provider" element={
+                    <RequireAuth>
+                      <RequireRole allowedRoles={["provider"]}>
+                        <RequireProfileCompletion>
+                          <ProviderDashboard />
+                        </RequireProfileCompletion>
+                      </RequireRole>
+                    </RequireAuth>
+                  } />
+
+                  {/* 404 catch-all fallback */}
+                  <Route path="*" element={<NotFound />} />
+                </Route>
+              </Routes>
+            </BrowserRouter>
+          </UserRoleProvider>
         </AdminRoleProvider>
       </TooltipProvider>
     </QueryClientProvider>

@@ -6,16 +6,17 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import { useAdminRole } from "@/contexts/AdminRoleContext";
+import { useUserRole } from "@/contexts/UserRoleContext";
 
 export default function AppLayout() {
   const { t } = useTranslation();
-  const { currentRole } = useAdminRole();
+  const { currentRole } = useUserRole();
   const location = useLocation();
 
   // Base navigation links
   const baseNavLinks = [
     { path: "/", label: t("home") },
+    { path: "/tasks", label: "Browse Tasks" }, // Universal task browsing
   ];
 
   // Role-specific navigation links
@@ -28,9 +29,6 @@ export default function AppLayout() {
     ],
     provider: [
       { path: "/dashboard/provider", label: t("dashboard") },
-      { path: "/provider/tasks", label: "Browse Tasks" },
-      { path: "/provider/offers", label: "My Offers" },
-      { path: "/provider/earnings", label: "Earnings" },
     ],
     admin: [
       { path: "/admin", label: "Admin Dashboard" },
