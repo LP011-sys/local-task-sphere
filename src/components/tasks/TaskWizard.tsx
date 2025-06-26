@@ -108,34 +108,34 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
     setPosting(true);
     try {
       // Get current auth user
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      const { data: { session }, error: authError } = await supabase.auth.getSession();
       
-      if (authError || !user) {
+      if (authError || !session?.user) {
         throw new Error("You must be logged in to post a task");
       }
 
-      console.log("Current auth user:", user.id);
+      console.log("Current auth user:", session.user.id);
 
-      // Check if app_users record exists, create if it doesn't
+      // Ensure app_users record exists
       let { data: appUser, error: profileError } = await supabase
         .from("app_users")
         .select("id")
-        .eq("auth_user_id", user.id)
+        .eq("auth_user_id", session.user.id)
         .single();
 
       console.log("App user lookup result:", { appUser, profileError });
 
-      // If no profile exists, create one
-      if (profileError && profileError.code === 'PGRST116') {
-        console.log("Creating new app_users profile for auth user:", user.id);
+      // Create profile if it doesn't exist
+      if (profileError?.code === 'PGRST116') {
+        console.log("Creating app_users profile for:", session.user.id);
         
         const { data: newProfile, error: createError } = await supabase
           .from("app_users")
           .insert({
-            auth_user_id: user.id,
+            auth_user_id: session.user.id,
             role: 'customer',
-            name: user.user_metadata?.name || user.email || 'User',
-            email: user.email || '',
+            name: session.user.user_metadata?.name || session.user.email || 'User',
+            email: session.user.email || '',
             preferred_language: 'en',
             roles: ['customer'],
             active_role: 'customer'
@@ -144,34 +144,35 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
           .single();
 
         if (createError) {
-          console.error("Profile creation error:", createError);
-          throw new Error("Failed to create user profile. Please try again.");
+          console.error("Profile creation failed:", createError);
+          throw new Error("Failed to create user profile");
         }
         
-        console.log("Created new app_users profile:", newProfile);
+        console.log("Created profile:", newProfile);
         appUser = newProfile;
       } else if (profileError) {
-        console.error("Profile fetch error:", profileError);
-        throw new Error("Failed to get user profile. Please try again.");
+        console.error("Profile lookup failed:", profileError);
+        throw new Error("Failed to get user profile");
       }
 
       if (!appUser?.id) {
-        throw new Error("Unable to get user profile ID");
+        throw new Error("No user profile found");
       }
 
-      console.log("Using app_users ID for task:", appUser.id);
+      console.log("Using app_users ID:", appUser.id);
 
+      // Prepare task data
       const selectedBoost = BOOST_OPTIONS.find(opt => opt.value === form.boost);
       const boostExpiresAt = selectedBoost && selectedBoost.duration > 0 
         ? new Date(Date.now() + selectedBoost.duration * 60 * 60 * 1000).toISOString()
         : null;
 
-      const payload = {
-        user_id: String(appUser.id), // Ensure it's a string
+      const taskData = {
+        user_id: appUser.id,
         category: form.category,
         description: form.description,
-        location: form.location ? form.location : null,
-        price: String(form.budget),
+        location: form.location || null,
+        price: form.budget,
         boost_status: form.boost,
         type: "standard",
         offer: form.title,
@@ -181,12 +182,16 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
         boost_amount: selectedBoost ? selectedBoost.price : 0,
       };
 
-      console.log("Task payload:", payload);
+      console.log("Inserting task:", taskData);
 
-      const { error } = await supabase.from("Tasks").insert(payload);
-      if (error) {
-        console.error("Task insertion error:", error);
-        throw error;
+      // Insert task
+      const { error: insertError } = await supabase
+        .from("Tasks")
+        .insert(taskData);
+
+      if (insertError) {
+        console.error("Task insert failed:", insertError);
+        throw new Error(`Failed to post task: ${insertError.message}`);
       }
       
       const boostMessage = selectedBoost && selectedBoost.price > 0 
@@ -199,14 +204,13 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
       });
       
       if (onDone) onDone();
-      
-      // Navigate to offers page to see responses
       navigate("/offers");
-    } catch (e: any) {
-      console.error("Task posting error:", e);
+      
+    } catch (error: any) {
+      console.error("Task posting error:", error);
       toast({ 
         title: "Failed to post task", 
-        description: e.message || "An unexpected error occurred", 
+        description: error.message || "Please try again", 
         variant: "destructive" 
       });
     } finally {
