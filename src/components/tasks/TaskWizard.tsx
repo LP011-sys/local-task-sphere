@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
@@ -106,13 +107,49 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
 
     setPosting(true);
     try {
-      // Ensure user profile exists and get the app_users.id
-      const { data: appUserId, error: profileError } = await supabase
-        .rpc('ensure_app_user_profile');
+      // Get current auth user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        throw new Error("You must be logged in to post a task");
+      }
 
-      if (profileError || !appUserId) {
-        console.error("Profile creation error:", profileError);
-        throw new Error("Failed to create user profile. Please try again.");
+      // Check if app_users record exists, create if it doesn't
+      let { data: appUser, error: profileError } = await supabase
+        .from("app_users")
+        .select("id")
+        .eq("auth_user_id", user.id)
+        .single();
+
+      // If no profile exists, create one
+      if (profileError && profileError.code === 'PGRST116') {
+        const { data: newProfile, error: createError } = await supabase
+          .from("app_users")
+          .insert({
+            auth_user_id: user.id,
+            role: 'customer',
+            name: user.user_metadata?.name || user.email || 'User',
+            email: user.email || '',
+            preferred_language: 'en',
+            roles: ['customer'],
+            active_role: 'customer'
+          })
+          .select("id")
+          .single();
+
+        if (createError) {
+          console.error("Profile creation error:", createError);
+          throw new Error("Failed to create user profile. Please try again.");
+        }
+        
+        appUser = newProfile;
+      } else if (profileError) {
+        console.error("Profile fetch error:", profileError);
+        throw new Error("Failed to get user profile. Please try again.");
+      }
+
+      if (!appUser?.id) {
+        throw new Error("Unable to get user profile ID");
       }
 
       const selectedBoost = BOOST_OPTIONS.find(opt => opt.value === form.boost);
@@ -121,7 +158,7 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
         : null;
 
       const payload = {
-        user_id: appUserId,
+        user_id: appUser.id as string,
         category: form.category,
         description: form.description,
         location: form.location ? form.location : null,
@@ -135,7 +172,7 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
         boost_amount: selectedBoost ? selectedBoost.price : 0,
       };
 
-      const { error } = await supabase.from("Tasks").insert([payload]);
+      const { error } = await supabase.from("Tasks").insert(payload);
       if (error) throw error;
       
       const boostMessage = selectedBoost && selectedBoost.price > 0 
