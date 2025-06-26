@@ -28,8 +28,10 @@ export default function AuthPage() {
   useEffect(() => {
     // Check if user is already authenticated
     const checkAuth = async () => {
+      console.log('AuthPage: Checking existing auth state');
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
+        console.log('AuthPage: User already authenticated, redirecting');
         await redirectAfterAuth();
       }
     };
@@ -39,9 +41,10 @@ export default function AuthPage() {
   // Handle auth state changes for email confirmation and sign-in
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.id);
+      console.log('AuthPage: Auth state changed:', event, session?.user?.id);
       
       if (event === 'SIGNED_IN' && session?.user) {
+        console.log('AuthPage: User signed in, processing...');
         setIsProcessingAuth(true);
         
         try {
@@ -52,12 +55,16 @@ export default function AuthPage() {
             .eq('auth_user_id', session.user.id)
             .single();
 
+          console.log('AuthPage: Existing profile check:', existingProfile);
+
           // If no profile exists, create one with user metadata
           if (!existingProfile) {
-            console.log('Creating profile for user:', session.user.id);
+            console.log('AuthPage: Creating profile for user:', session.user.id);
             const userMetadata = session.user.user_metadata;
             const userRole = userMetadata?.active_role || userMetadata?.roles?.[0] || 'customer';
             const userRoles = userMetadata?.roles || [userRole];
+
+            console.log('AuthPage: Creating profile with role:', userRole, 'and roles:', userRoles);
 
             const { error: profileError } = await supabase
               .from('app_users')
@@ -71,18 +78,19 @@ export default function AuthPage() {
               });
 
             if (profileError) {
-              console.error('Profile creation error:', profileError);
-              toast.error('Failed to create user profile');
+              console.error('AuthPage: Profile creation error:', profileError);
+              toast.error('Failed to create user profile: ' + profileError.message);
               return;
             }
 
-            console.log('Profile created successfully with role:', userRole);
+            console.log('AuthPage: Profile created successfully with role:', userRole);
           }
 
           // Redirect after successful authentication and profile creation
+          console.log('AuthPage: Triggering redirect after auth');
           await redirectAfterAuth();
         } catch (error) {
-          console.error('Error handling auth state change:', error);
+          console.error('AuthPage: Error handling auth state change:', error);
           toast.error('Authentication error occurred');
         } finally {
           setIsProcessingAuth(false);
@@ -103,12 +111,13 @@ export default function AuthPage() {
 
     setLoading(true);
     try {
-      console.log('Signing up user with role:', selectedRole);
+      console.log('AuthPage: Signing up user with role:', selectedRole);
       
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: `${window.location.origin}/auth`,
           data: {
             name,
             roles: [selectedRole],
@@ -119,15 +128,19 @@ export default function AuthPage() {
 
       if (error) throw error;
 
+      console.log('AuthPage: Sign up response:', { user: data.user?.id, session: !!data.session });
+
       if (data.user && !data.session) {
         // User needs to confirm email
+        console.log('AuthPage: User needs to confirm email');
         toast.success("Account created! Please check your email for a confirmation link.");
       } else if (data.session) {
         // User is immediately signed in (email confirmation disabled)
+        console.log('AuthPage: User immediately signed in');
         toast.success("Account created successfully!");
       }
     } catch (error: any) {
-      console.error('Sign up error:', error);
+      console.error('AuthPage: Sign up error:', error);
       toast.error(error.message || "Failed to create account");
     } finally {
       setLoading(false);
@@ -139,6 +152,7 @@ export default function AuthPage() {
     setLoading(true);
     
     try {
+      console.log('AuthPage: Signing in user');
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -146,9 +160,10 @@ export default function AuthPage() {
 
       if (error) throw error;
 
+      console.log('AuthPage: Sign in successful');
       toast.success("Signed in successfully!");
     } catch (error: any) {
-      console.error('Sign in error:', error);
+      console.error('AuthPage: Sign in error:', error);
       toast.error(error.message || "Failed to sign in");
     } finally {
       setLoading(false);
@@ -156,11 +171,12 @@ export default function AuthPage() {
   };
 
   const handleAuthSuccess = async () => {
+    console.log('AuthPage: Auth success callback triggered');
     setIsProcessingAuth(true);
     try {
       await redirectAfterAuth();
     } catch (error) {
-      console.error('Error redirecting after auth:', error);
+      console.error('AuthPage: Error redirecting after auth:', error);
     } finally {
       setIsProcessingAuth(false);
     }
