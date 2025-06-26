@@ -11,7 +11,8 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import { User, RefreshCw, LogOut, Badge } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { User, RefreshCw, LogOut } from 'lucide-react';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { useAdminRole } from '@/contexts/AdminRoleContext';
 import { toast } from 'sonner';
@@ -21,7 +22,7 @@ export default function ProfileAvatar() {
   const [session, setSession] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSwitching, setIsSwitching] = useState(false);
-  const { currentRole, setCurrentRole } = useAdminRole();
+  const { currentRole, switchRole } = useAdminRole();
   const { data: userProfile } = useCurrentUserProfile(session?.user?.id);
 
   useEffect(() => {
@@ -66,8 +67,8 @@ export default function ProfileAvatar() {
 
       if (error) throw error;
 
-      // Update local state
-      setCurrentRole(newRole);
+      // Update local state using the context method
+      switchRole(newRole);
       
       // Navigate to appropriate dashboard
       if (newRole === 'provider') {
