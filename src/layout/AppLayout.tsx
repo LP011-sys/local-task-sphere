@@ -1,15 +1,17 @@
 
 import React from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import { useAdminRole } from "@/contexts/AdminRoleContext";
 
 export default function AppLayout() {
   const { t } = useTranslation();
   const { currentRole } = useAdminRole();
+  const location = useLocation();
 
   // Base navigation links
   const baseNavLinks = [
@@ -26,6 +28,9 @@ export default function AppLayout() {
     ],
     provider: [
       { path: "/dashboard/provider", label: t("dashboard") },
+      { path: "/provider/tasks", label: "Browse Tasks" },
+      { path: "/provider/offers", label: "My Offers" },
+      { path: "/provider/earnings", label: "Earnings" },
     ],
     admin: [
       { path: "/admin", label: "Admin Dashboard" },
@@ -47,13 +52,26 @@ export default function AppLayout() {
     ...commonLinks
   ];
 
+  // Don't show breadcrumbs on home page or auth pages
+  const showBreadcrumbs = location.pathname !== '/' && 
+                         !location.pathname.startsWith('/auth') &&
+                         !location.pathname.startsWith('/onboarding');
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-primary-50 to-slate-100">
+    <div className="min-h-screen bg-gradient-to-br from-white via-primary-50 to-slate-100 flex flex-col">
       <Header navLinks={navLinks} />
       
       <ErrorBoundary>
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-section w-full" role="main">
-          <Outlet />
+        <main className="flex-1 w-full" role="main">
+          {showBreadcrumbs && (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4">
+              <Breadcrumbs />
+            </div>
+          )}
+          
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-section">
+            <Outlet />
+          </div>
         </main>
       </ErrorBoundary>
       
