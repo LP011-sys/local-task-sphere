@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,104 +7,122 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 import RoleSelector from "@/components/signup/RoleSelector";
 
 type Role = "customer" | "provider";
 
 export default function AuthPage() {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    confirmPassword: "",
-    name: "",
-  });
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [name, setName] = useState("");
   const [selectedRole, setSelectedRole] = useState<Role>("customer");
   const [loading, setLoading] = useState(false);
+  const [isProcessingAuth, setIsProcessingAuth] = useState(false);
+  const [processingTimeout, setProcessingTimeout] = useState<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
+  const { redirectAfterAuth } = useAuthRedirect();
 
   useEffect(() => {
     // Check if user is already authenticated
     const checkAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          console.log('User already authenticated, redirecting');
-          redirectUser(session.user);
-        }
-      } catch (error) {
-        console.error('Auth check error:', error);
+      console.log('AuthPage: Checking existing auth state');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        console.log('AuthPage: User already authenticated, redirecting');
+        await redirectAfterAuth();
       }
     };
     checkAuth();
-  }, []);
+  }, [redirectAfterAuth]);
 
-  const redirectUser = (user: any) => {
-    const userRole = user.user_metadata?.active_role || user.user_metadata?.roles?.[0] || 'customer';
-    
-    if (userRole === "provider") {
-      navigate("/dashboard/provider", { replace: true });
-    } else if (userRole === "admin") {
-      navigate("/admin", { replace: true });
-    } else {
-      navigate("/dashboard/customer", { replace: true });
-    }
-  };
+  // Handle auth state changes for regular sign-in (not email confirmation)
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('AuthPage: Auth state changed:', event, session?.user?.id);
+      
+      // Only handle SIGNED_IN events that are NOT from email confirmation
+      if (event === 'SIGNED_IN' && session?.user && !window.location.hash.includes('access_token')) {
+        console.log('AuthPage: Regular sign-in detected, processing...');
+        setIsProcessingAuth(true);
+        
+        // Set timeout protection
+        const timeout = setTimeout(() => {
+          console.warn('AuthPage: Processing timeout reached, clearing state');
+          setIsProcessingAuth(false);
+          toast.error('Authentication took too long. Please try again.');
+        }, 8000);
+        
+        setProcessingTimeout(timeout);
+        
+        try {
+          console.log('AuthPage: Triggering redirect after regular sign-in');
+          await redirectAfterAuth();
+        } catch (error) {
+          console.error('AuthPage: Error handling regular sign-in:', error);
+          toast.error('Authentication error occurred');
+        } finally {
+          clearTimeout(timeout);
+          setIsProcessingAuth(false);
+        }
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [redirectAfterAuth]);
+
+  // Clear processing timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (processingTimeout) {
+        clearTimeout(processingTimeout);
+      }
+    };
+  }, [processingTimeout]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (formData.password !== formData.confirmPassword) {
+    if (password !== confirmPassword) {
       toast.error("Passwords don't match");
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      toast.error("Password must be at least 6 characters long");
       return;
     }
 
     setLoading(true);
     try {
-      console.log('Starting sign up process');
+      console.log('AuthPage: Signing up user with role:', selectedRole);
       
       const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
+        email,
+        password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: {
-            name: formData.name,
+            name,
             roles: [selectedRole],
             active_role: selectedRole
           }
         }
       });
 
-      if (error) {
-        console.error('Sign up error:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      console.log('Sign up response:', data);
+      console.log('AuthPage: Sign up response:', { user: data.user?.id, session: !!data.session });
 
       if (data.user && !data.session) {
+        // User needs to confirm email
+        console.log('AuthPage: User needs to confirm email');
         toast.success("Account created! Please check your email for a confirmation link.");
-        // Reset form
-        setFormData({ email: "", password: "", confirmPassword: "", name: "" });
       } else if (data.session) {
-        toast.success("Account created and logged in!");
-        redirectUser(data.user);
+        // User is immediately signed in (email confirmation disabled)
+        console.log('AuthPage: User immediately signed in');
+        toast.success("Account created successfully!");
+        // The auth state change will handle the redirect
       }
     } catch (error: any) {
-      console.error('Sign up error:', error);
-      
-      if (error.message?.includes('already registered')) {
-        toast.error("An account with this email already exists. Please sign in instead.");
-      } else if (error.message?.includes('invalid email')) {
-        toast.error("Please enter a valid email address.");
-      } else {
-        toast.error(error.message || "Failed to create account. Please try again.");
-      }
+      console.error('AuthPage: Sign up error:', error);
+      toast.error(error.message || "Failed to create account");
     } finally {
       setLoading(false);
     }
@@ -116,41 +133,78 @@ export default function AuthPage() {
     setLoading(true);
     
     try {
-      console.log('Starting sign in process');
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
+      console.log('AuthPage: Signing in user');
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      if (error) {
-        console.error('Sign in error:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      console.log('Sign in successful:', data);
+      console.log('AuthPage: Sign in successful');
       toast.success("Signed in successfully!");
-      redirectUser(data.user);
+      // The auth state change will handle the redirect
     } catch (error: any) {
-      console.error('Sign in error:', error);
-      
-      if (error.message?.includes('Invalid login credentials')) {
-        toast.error("Invalid email or password. Please check your credentials.");
-      } else if (error.message?.includes('Email not confirmed')) {
-        toast.error("Please check your email and click the confirmation link first.");
-      } else {
-        toast.error(error.message || "Failed to sign in. Please try again.");
-      }
+      console.error('AuthPage: Sign in error:', error);
+      toast.error(error.message || "Failed to sign in");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleRetryAuth = async () => {
+    console.log('AuthPage: Retrying authentication');
+    setIsProcessingAuth(false);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await redirectAfterAuth();
+      } else {
+        toast.error('No active session found. Please sign in again.');
+      }
+    } catch (error) {
+      console.error('AuthPage: Retry auth error:', error);
+      toast.error('Failed to retry authentication');
+    }
   };
+
+  const handleForceSignOut = async () => {
+    console.log('AuthPage: Force signing out');
+    setIsProcessingAuth(false);
+    await supabase.auth.signOut();
+    toast.info('Signed out. Please try signing in again.');
+  };
+
+  if (isProcessingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-blue-50 to-slate-100">
+        <div className="text-center max-w-md">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-lg text-muted-foreground mb-4">Processing authentication...</p>
+          <div className="space-y-2">
+            <Button 
+              variant="outline" 
+              onClick={handleRetryAuth}
+              className="w-full"
+            >
+              Retry Authentication
+            </Button>
+            <Button 
+              variant="ghost" 
+              onClick={handleForceSignOut}
+              className="w-full text-sm"
+            >
+              Sign Out & Try Again
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-blue-50 to-slate-100 p-4">
+      
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-primary">Welcome</CardTitle>
@@ -171,10 +225,9 @@ export default function AuthPage() {
                     id="signin-email"
                     type="email"
                     placeholder="Enter your email"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
-                    disabled={loading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -183,10 +236,9 @@ export default function AuthPage() {
                     id="signin-password"
                     type="password"
                     placeholder="Enter your password"
-                    value={formData.password}
-                    onChange={(e) => handleInputChange('password', e.target.value)}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     required
-                    disabled={loading}
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
@@ -203,10 +255,9 @@ export default function AuthPage() {
                     id="signup-name"
                     type="text"
                     placeholder="Enter your full name"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                     required
-                    disabled={loading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -215,10 +266,9 @@ export default function AuthPage() {
                     id="signup-email"
                     type="email"
                     placeholder="Enter your email"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
-                    disabled={loading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -226,12 +276,10 @@ export default function AuthPage() {
                   <Input
                     id="signup-password"
                     type="password"
-                    placeholder="Create a password (min 6 characters)"
-                    value={formData.password}
-                    onChange={(e) => handleInputChange('password', e.target.value)}
+                    placeholder="Create a password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     required
-                    disabled={loading}
-                    minLength={6}
                   />
                 </div>
                 <div className="space-y-2">
@@ -240,10 +288,9 @@ export default function AuthPage() {
                     id="confirm-password"
                     type="password"
                     placeholder="Confirm your password"
-                    value={formData.confirmPassword}
-                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
                     required
-                    disabled={loading}
                   />
                 </div>
                 
@@ -253,18 +300,11 @@ export default function AuthPage() {
                 />
                 
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Creating account..." : `Sign Up as ${selectedRole === 'customer' ? 'Customer' : 'Provider'}`}
+                  {loading ? "Creating account..." : "Sign Up"}
                 </Button>
               </form>
             </TabsContent>
           </Tabs>
-          
-          {loading && (
-            <div className="mt-4 text-center text-sm text-muted-foreground">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mx-auto mb-2"></div>
-              Processing your request...
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

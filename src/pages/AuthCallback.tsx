@@ -6,100 +6,112 @@ import { toast } from 'sonner';
 
 export default function AuthCallbackPage() {
   const [isProcessing, setIsProcessing] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        console.log('AuthCallback: Processing authentication callback');
+        console.log('AuthCallbackPage: Processing email confirmation callback');
         console.log('Current URL:', window.location.href);
         
-        // Get session from URL hash (for email confirmations)
+        // Get the session from the URL hash
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('AuthCallback: Session error:', error);
-          setError('Authentication failed: ' + error.message);
+          console.error('AuthCallbackPage: Error getting session:', error);
+          toast.error('Authentication failed: ' + error.message);
+          navigate('/auth', { replace: true });
           return;
         }
 
         if (data.session?.user) {
-          console.log('AuthCallback: User authenticated:', data.session.user.id);
+          console.log('AuthCallbackPage: Email confirmed successfully for user:', data.session.user.id);
           
-          // Ensure user profile exists
-          await ensureUserProfile(data.session.user);
+          // Handle profile creation if needed
+          await handleProfileCreation(data.session.user);
           
-          // Clear URL parameters
+          // Clear the URL hash
           window.history.replaceState(null, '', window.location.pathname);
           
-          // Redirect based on role
-          redirectUser(data.session.user);
+          // Redirect based on user role
+          await redirectAfterConfirmation(data.session.user);
         } else {
-          console.log('AuthCallback: No session found, redirecting to auth');
+          console.log('AuthCallbackPage: No session found, redirecting to auth');
           navigate('/auth', { replace: true });
         }
       } catch (error) {
-        console.error('AuthCallback: Unexpected error:', error);
-        setError('Authentication error occurred');
+        console.error('AuthCallbackPage: Unexpected error:', error);
+        toast.error('Authentication error occurred');
+        navigate('/auth', { replace: true });
       } finally {
         setIsProcessing(false);
       }
     };
 
-    const ensureUserProfile = async (user: any) => {
+    const handleProfileCreation = async (user: any) => {
       try {
-        console.log('AuthCallback: Checking user profile for:', user.id);
-        
         // Check if profile exists
-        const { data: existingProfile, error: checkError } = await supabase
+        const { data: existingProfile } = await supabase
           .from('app_users')
           .select('id')
           .eq('auth_user_id', user.id)
           .single();
 
-        if (checkError && checkError.code !== 'PGRST116') {
-          console.error('AuthCallback: Profile check error:', checkError);
-          throw checkError;
-        }
-
-        // Create profile if it doesn't exist
+        // If no profile exists, create one
         if (!existingProfile) {
-          const userRole = user.user_metadata?.active_role || user.user_metadata?.roles?.[0] || 'customer';
-          const userRoles = user.user_metadata?.roles || [userRole];
+          console.log('AuthCallbackPage: Creating profile for user:', user.id);
+          const userMetadata = user.user_metadata;
+          const userRole = userMetadata?.active_role || userMetadata?.roles?.[0] || 'customer';
+          const userRoles = userMetadata?.roles || [userRole];
 
-          console.log('AuthCallback: Creating profile with role:', userRole);
+          const { error: profileError } = await supabase
+            .from('app_users')
+            .insert({
+              auth_user_id: user.id,
+              email: user.email,
+              name: userMetadata?.name || '',
+              roles: userRoles,
+              active_role: userRole,
+              role: userRole
+            });
 
-          const { error: insertError } = await supabase.from('app_users').insert({
-            auth_user_id: user.id,
-            email: user.email,
-            name: user.user_metadata?.name || '',
-            roles: userRoles,
-            active_role: userRole,
-            role: userRole // For backward compatibility
-          });
-
-          if (insertError) {
-            console.error('AuthCallback: Profile creation error:', insertError);
-            // Don't block - user can complete profile later
-            toast.error('Profile setup incomplete. You can complete it in settings.');
+          if (profileError) {
+            console.error('AuthCallbackPage: Profile creation error:', profileError);
+            // Don't throw - let the user proceed even if profile creation fails
+            toast.error('Profile setup incomplete, please update your profile');
           } else {
-            console.log('AuthCallback: Profile created successfully');
+            console.log('AuthCallbackPage: Profile created successfully');
           }
         }
       } catch (error) {
-        console.error('AuthCallback: Profile creation error:', error);
-        // Don't block - show warning but allow continuation
-        toast.error('Profile setup incomplete. You can complete it in settings.');
+        console.error('AuthCallbackPage: Error in profile creation:', error);
+        // Don't throw - let the user proceed
       }
     };
 
-    const redirectUser = (user: any) => {
+    const redirectAfterConfirmation = async (user: any) => {
       try {
-        const userRole = user.user_metadata?.active_role || user.user_metadata?.roles?.[0] || 'customer';
-        
-        console.log('AuthCallback: Redirecting user with role:', userRole);
+        console.log('AuthCallbackPage: Redirecting user after confirmation:', user.id);
 
+        // Get user profile to determine role
+        const { data: profile } = await supabase
+          .from("app_users")
+          .select("roles, active_role")
+          .eq("auth_user_id", user.id)
+          .single();
+
+        let userRole = 'customer';
+        
+        if (profile) {
+          userRole = profile.active_role || profile.roles?.[0] || 'customer';
+        } else {
+          // Fallback to metadata if no profile
+          userRole = user.user_metadata?.active_role || user.user_metadata?.roles?.[0] || 'customer';
+        }
+
+        console.log('AuthCallbackPage: Redirecting to dashboard for role:', userRole);
+
+        // Redirect based on role
         if (userRole === "provider") {
           navigate("/dashboard/provider", { replace: true });
         } else if (userRole === "admin") {
@@ -108,20 +120,20 @@ export default function AuthCallbackPage() {
           navigate("/dashboard/customer", { replace: true });
         }
 
-        toast.success('Welcome back! Email confirmed successfully.');
+        toast.success('Email confirmed successfully! Welcome!');
       } catch (error) {
-        console.error("AuthCallback: Redirect error:", error);
-        // Default redirect
+        console.error("AuthCallbackPage: Redirect error:", error);
+        // Default redirect on error
         navigate("/dashboard/customer", { replace: true });
-        toast.success('Welcome back!');
       }
     };
 
-    // Set timeout to prevent infinite loading
+    // Set up timeout protection
     const timeout = setTimeout(() => {
-      console.warn('AuthCallback: Processing timeout');
-      setError('Email confirmation is taking longer than expected. Please try signing in directly.');
+      console.warn('AuthCallbackPage: Processing timeout reached');
       setIsProcessing(false);
+      toast.error('Authentication timeout. Please try signing in again.');
+      navigate('/auth', { replace: true });
     }, 10000);
 
     handleAuthCallback();
@@ -129,29 +141,13 @@ export default function AuthCallbackPage() {
     return () => clearTimeout(timeout);
   }, [navigate]);
 
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-blue-50 to-slate-100">
-        <div className="text-center max-w-md">
-          <div className="text-red-500 text-lg mb-4">Authentication Error</div>
-          <p className="text-muted-foreground mb-4">{error}</p>
-          <button 
-            onClick={() => navigate('/auth', { replace: true })}
-            className="bg-primary text-white px-4 py-2 rounded hover:bg-primary/90"
-          >
-            Return to Sign In
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   if (isProcessing) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-blue-50 to-slate-100">
         <div className="text-center max-w-md">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-lg text-muted-foreground">Confirming your email...</p>
+          <p className="text-sm text-muted-foreground mt-2">This should only take a moment</p>
         </div>
       </div>
     );
