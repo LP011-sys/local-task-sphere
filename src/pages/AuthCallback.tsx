@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 
 export default function AuthCallbackPage() {
   const [isProcessing, setIsProcessing] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -14,13 +15,12 @@ export default function AuthCallbackPage() {
         console.log('AuthCallbackPage: Processing email confirmation callback');
         console.log('Current URL:', window.location.href);
         
-        // Get the session from the URL hash
+        // Get the session from URL
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('AuthCallbackPage: Error getting session:', error);
-          toast.error('Authentication failed: ' + error.message);
-          navigate('/auth', { replace: true });
+          setError('Authentication failed: ' + error.message);
           return;
         }
 
@@ -28,13 +28,13 @@ export default function AuthCallbackPage() {
           console.log('AuthCallbackPage: Email confirmed successfully for user:', data.session.user.id);
           console.log('AuthCallbackPage: User metadata:', data.session.user.user_metadata);
           
-          // Handle profile creation if needed
+          // Try to create/ensure profile exists
           await handleProfileCreation(data.session.user);
           
-          // Clear the URL hash
+          // Clear URL hash
           window.history.replaceState(null, '', window.location.pathname);
           
-          // Redirect based on user role
+          // Redirect based on role
           await redirectAfterConfirmation(data.session.user);
         } else {
           console.log('AuthCallbackPage: No session found, redirecting to auth');
@@ -42,8 +42,7 @@ export default function AuthCallbackPage() {
         }
       } catch (error) {
         console.error('AuthCallbackPage: Unexpected error:', error);
-        toast.error('Authentication error occurred');
-        navigate('/auth', { replace: true });
+        setError('Authentication error occurred');
       } finally {
         setIsProcessing(false);
       }
@@ -51,74 +50,37 @@ export default function AuthCallbackPage() {
 
     const handleProfileCreation = async (user: any) => {
       try {
-        // Check if profile exists
-        const { data: existingProfile } = await supabase
-          .from('app_users')
-          .select('id')
-          .eq('auth_user_id', user.id)
-          .single();
+        console.log('AuthCallbackPage: Ensuring profile exists for user:', user.id);
+        
+        // Use the new database function for safe profile creation
+        const { error } = await supabase.rpc('get_or_create_user_profile', {
+          user_id: user.id,
+          user_email: user.email,
+          user_name: user.user_metadata?.name || '',
+          user_roles: user.user_metadata?.roles || ['customer'],
+          user_active_role: user.user_metadata?.active_role || user.user_metadata?.roles?.[0] || 'customer'
+        });
 
-        // If no profile exists, create one
-        if (!existingProfile) {
-          console.log('AuthCallbackPage: Creating profile for user:', user.id);
-          const userMetadata = user.user_metadata;
-          
-          // Get role from metadata with proper fallback
-          const userRole = userMetadata?.active_role || userMetadata?.roles?.[0] || 'customer';
-          const userRoles = userMetadata?.roles || [userRole];
-
-          console.log('AuthCallbackPage: Creating profile with role:', userRole, 'roles:', userRoles);
-
-          const { error: profileError } = await supabase
-            .from('app_users')
-            .insert({
-              auth_user_id: user.id,
-              email: user.email,
-              name: userMetadata?.name || '',
-              roles: userRoles,
-              active_role: userRole,
-              role: userRole
-            });
-
-          if (profileError) {
-            console.error('AuthCallbackPage: Profile creation error:', profileError);
-            // Don't throw - let the user proceed even if profile creation fails
-            toast.error('Profile setup incomplete, please update your profile');
-          } else {
-            console.log('AuthCallbackPage: Profile created successfully with role:', userRole);
-          }
+        if (error) {
+          console.error('AuthCallbackPage: Profile creation error:', error);
+          toast.error('Profile setup incomplete. You can complete it later in settings.');
         } else {
-          console.log('AuthCallbackPage: Profile already exists for user:', user.id);
+          console.log('AuthCallbackPage: Profile ensured successfully');
         }
       } catch (error) {
         console.error('AuthCallbackPage: Error in profile creation:', error);
-        // Don't throw - let the user proceed
+        // Don't block user - they can complete profile later
       }
     };
 
     const redirectAfterConfirmation = async (user: any) => {
       try {
-        console.log('AuthCallbackPage: Redirecting user after confirmation:', user.id);
+        console.log('AuthCallbackPage: Determining redirect for user:', user.id);
 
-        // Get user profile to determine role
-        const { data: profile } = await supabase
-          .from("app_users")
-          .select("roles, active_role")
-          .eq("auth_user_id", user.id)
-          .single();
-
-        let userRole = 'customer';
+        // Get user role from metadata first (more reliable during email confirmation)
+        let userRole = user.user_metadata?.active_role || user.user_metadata?.roles?.[0] || 'customer';
         
-        if (profile) {
-          userRole = profile.active_role || profile.roles?.[0] || 'customer';
-          console.log('AuthCallbackPage: Found profile role:', userRole);
-        } else {
-          // Fallback to metadata if no profile
-          userRole = user.user_metadata?.active_role || user.user_metadata?.roles?.[0] || 'customer';
-          console.log('AuthCallbackPage: Using metadata role:', userRole);
-        }
-
-        console.log('AuthCallbackPage: Redirecting to dashboard for role:', userRole);
+        console.log('AuthCallbackPage: Using role from metadata:', userRole);
 
         // Redirect based on role
         if (userRole === "provider") {
@@ -134,21 +96,38 @@ export default function AuthCallbackPage() {
         console.error("AuthCallbackPage: Redirect error:", error);
         // Default redirect on error
         navigate("/dashboard/customer", { replace: true });
+        toast.success('Welcome! Please complete your profile if needed.');
       }
     };
 
     // Set up timeout protection
     const timeout = setTimeout(() => {
       console.warn('AuthCallbackPage: Processing timeout reached');
+      setError('Email confirmation is taking longer than expected. Please try signing in directly.');
       setIsProcessing(false);
-      toast.error('Authentication timeout. Please try signing in again.');
-      navigate('/auth', { replace: true });
-    }, 10000);
+    }, 15000);
 
     handleAuthCallback();
 
     return () => clearTimeout(timeout);
   }, [navigate]);
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-blue-50 to-slate-100">
+        <div className="text-center max-w-md">
+          <div className="text-red-500 text-lg mb-4">Authentication Error</div>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <button 
+            onClick={() => navigate('/auth', { replace: true })}
+            className="bg-primary text-white px-4 py-2 rounded hover:bg-primary/90"
+          >
+            Return to Sign In
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (isProcessing) {
     return (

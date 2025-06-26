@@ -1,67 +1,81 @@
 
-import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export function useAuthRedirect() {
   const navigate = useNavigate();
 
   const redirectAfterAuth = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      console.log('useAuthRedirect: Starting redirect process');
       
-      if (!user) {
-        console.log('No user found for redirect');
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        console.error('useAuthRedirect: No user found:', userError);
         return;
       }
 
-      console.log('Redirecting user:', user.id);
+      console.log('useAuthRedirect: User found:', user.id);
 
-      // Get user profile to determine role
-      const { data: profile, error } = await supabase
+      // Try to get user profile with timeout
+      const profilePromise = supabase
         .from("app_users")
-        .select("roles, active_role")
+        .select("roles, active_role, profile_completed")
         .eq("auth_user_id", user.id)
         .single();
 
-      if (error || !profile) {
-        console.log('Profile fetch error or no profile:', error);
-        
-        // If no profile exists, check user metadata for role
-        const userRole = user.user_metadata?.active_role || user.user_metadata?.roles?.[0] || 'customer';
-        console.log('Using metadata role for redirect:', userRole);
-        
-        // Redirect based on metadata role to complete profile
-        if (userRole === "provider") {
-          navigate("/complete-profile/provider");
-        } else {
-          navigate("/complete-profile/customer");
-        }
-        return;
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+      );
+
+      let profile = null;
+      try {
+        const { data } = await Promise.race([profilePromise, timeoutPromise]) as any;
+        profile = data;
+      } catch (error) {
+        console.warn('useAuthRedirect: Profile fetch failed or timed out:', error);
       }
 
-      console.log('User profile found:', profile);
+      // Determine user role with fallback logic
+      let userRole = 'customer';
+      if (profile?.active_role) {
+        userRole = profile.active_role;
+      } else if (profile?.roles?.[0]) {
+        userRole = profile.roles[0];
+      } else if (user.user_metadata?.active_role) {
+        userRole = user.user_metadata.active_role;
+      } else if (user.user_metadata?.roles?.[0]) {
+        userRole = user.user_metadata.roles[0];
+      }
 
-      // Use active_role if available, otherwise fall back to first role, then default to customer
-      const userRole = profile.active_role || profile.roles?.[0] || 'customer';
-
-      console.log('Redirecting to dashboard for role:', userRole);
+      console.log('useAuthRedirect: Determined role:', userRole);
 
       // Redirect based on role
-      if (userRole === "customer") {
-        navigate("/dashboard/customer");
-      } else if (userRole === "provider") {
-        navigate("/dashboard/provider");
-      } else if (userRole === "admin") {
-        navigate("/admin");
-      } else {
-        // Default to customer dashboard
-        navigate("/dashboard/customer");
+      switch (userRole) {
+        case "provider":
+          if (!profile?.profile_completed) {
+            navigate("/complete-profile/provider", { replace: true });
+          } else {
+            navigate("/dashboard/provider", { replace: true });
+          }
+          break;
+        case "admin":
+          navigate("/admin", { replace: true });
+          break;
+        default:
+          if (!profile?.profile_completed) {
+            navigate("/complete-profile/customer", { replace: true });
+          } else {
+            navigate("/dashboard/customer", { replace: true });
+          }
       }
     } catch (error) {
-      console.error("Redirect error:", error);
+      console.error("useAuthRedirect: Redirect error:", error);
+      toast.error("Authentication error. Please try again.");
       // Default redirect on error
-      navigate("/dashboard/customer");
+      navigate("/dashboard/customer", { replace: true });
     }
   };
 
