@@ -22,6 +22,7 @@ export default function ProfileAvatar() {
   const [session, setSession] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSwitching, setIsSwitching] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const { currentRole, availableRoles, switchRole } = useUserRole();
   const { data: userProfile } = useCurrentUserProfile(session?.user?.id);
 
@@ -75,13 +76,32 @@ export default function ProfileAvatar() {
   };
 
   const handleSignOut = async () => {
+    if (signingOut) return;
+    
+    setSigningOut(true);
     try {
-      await supabase.auth.signOut();
-      navigate('/auth');
+      console.log('ProfileAvatar: Starting sign out process');
+      
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('ProfileAvatar: Sign out error:', error);
+        toast.error('Failed to sign out: ' + error.message);
+        return;
+      }
+      
+      console.log('ProfileAvatar: Sign out successful, redirecting to auth');
       toast.success('Signed out successfully');
+      
+      // Clear any local state and navigate
+      setSession(null);
+      navigate('/auth', { replace: true });
+      
     } catch (error) {
-      console.error('Error signing out:', error);
-      toast.error('Failed to sign out');
+      console.error('ProfileAvatar: Unexpected error during sign out:', error);
+      toast.error('An unexpected error occurred during sign out');
+    } finally {
+      setSigningOut(false);
     }
   };
 
@@ -156,9 +176,9 @@ export default function ProfileAvatar() {
         <DropdownMenuSeparator />
         
         {/* Sign Out */}
-        <DropdownMenuItem onClick={handleSignOut}>
-          <LogOut className="mr-2 h-4 w-4" />
-          Sign Out
+        <DropdownMenuItem onClick={handleSignOut} disabled={signingOut}>
+          <LogOut className={`mr-2 h-4 w-4 ${signingOut ? 'animate-spin' : ''}`} />
+          {signingOut ? 'Signing out...' : 'Sign Out'}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
