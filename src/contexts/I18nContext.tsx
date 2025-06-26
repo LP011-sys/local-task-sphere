@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, ReactNode } from "react";
 
 type Language = "en" | "sr" | "ru";
 
-const translations = {
+export const translations = {
   en: {
     customer: "Customer",
     provider: "Provider",
