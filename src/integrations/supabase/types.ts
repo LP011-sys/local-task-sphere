@@ -53,15 +53,21 @@ export type Database = {
       }
       app_users: {
         Row: {
+          accepts_marketing: boolean | null
           active_role: string | null
           auth_user_id: string
+          basic_profile_completed: boolean | null
           bio: string | null
           completed_tasks: number | null
           created_at: string | null
           credit_balance: number | null
+          customer_interests: string[] | null
+          drivers_license_url: string | null
           email: string
           email_notifications_enabled: boolean | null
+          has_submitted_id: boolean | null
           id: string
+          id_verification_url: string | null
           interface_language: string | null
           is_verified: boolean | null
           language: string | null
@@ -72,7 +78,9 @@ export type Database = {
           notification_tokens: Json | null
           phone: string | null
           preferred_language: string
+          profile_completed: boolean | null
           profile_photo: string | null
+          provider_skills: string[] | null
           push_notifications_enabled: boolean | null
           rating: number | null
           referral_code: string | null
@@ -85,15 +93,21 @@ export type Database = {
           verification_status: string | null
         }
         Insert: {
+          accepts_marketing?: boolean | null
           active_role?: string | null
           auth_user_id: string
+          basic_profile_completed?: boolean | null
           bio?: string | null
           completed_tasks?: number | null
           created_at?: string | null
           credit_balance?: number | null
+          customer_interests?: string[] | null
+          drivers_license_url?: string | null
           email: string
           email_notifications_enabled?: boolean | null
+          has_submitted_id?: boolean | null
           id?: string
+          id_verification_url?: string | null
           interface_language?: string | null
           is_verified?: boolean | null
           language?: string | null
@@ -104,7 +118,9 @@ export type Database = {
           notification_tokens?: Json | null
           phone?: string | null
           preferred_language?: string
+          profile_completed?: boolean | null
           profile_photo?: string | null
+          provider_skills?: string[] | null
           push_notifications_enabled?: boolean | null
           rating?: number | null
           referral_code?: string | null
@@ -117,15 +133,21 @@ export type Database = {
           verification_status?: string | null
         }
         Update: {
+          accepts_marketing?: boolean | null
           active_role?: string | null
           auth_user_id?: string
+          basic_profile_completed?: boolean | null
           bio?: string | null
           completed_tasks?: number | null
           created_at?: string | null
           credit_balance?: number | null
+          customer_interests?: string[] | null
+          drivers_license_url?: string | null
           email?: string
           email_notifications_enabled?: boolean | null
+          has_submitted_id?: boolean | null
           id?: string
+          id_verification_url?: string | null
           interface_language?: string | null
           is_verified?: boolean | null
           language?: string | null
@@ -136,7 +158,9 @@ export type Database = {
           notification_tokens?: Json | null
           phone?: string | null
           preferred_language?: string
+          profile_completed?: boolean | null
           profile_photo?: string | null
+          provider_skills?: string[] | null
           push_notifications_enabled?: boolean | null
           rating?: number | null
           referral_code?: string | null

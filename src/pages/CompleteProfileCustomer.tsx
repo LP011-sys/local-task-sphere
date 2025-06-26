@@ -201,7 +201,7 @@ export default function CompleteProfileCustomer() {
                 <Checkbox
                   id="terms"
                   checked={acceptTerms}
-                  onCheckedChange={setAcceptTerms}
+                  onCheckedChange={(checked) => setAcceptTerms(checked === true)}
                 />
                 <Label htmlFor="terms" className="text-sm">
                   I accept the Terms & Conditions *
@@ -212,7 +212,7 @@ export default function CompleteProfileCustomer() {
                 <Checkbox
                   id="marketing"
                   checked={acceptMarketing}
-                  onCheckedChange={setAcceptMarketing}
+                  onCheckedChange={(checked) => setAcceptMarketing(checked === true)}
                 />
                 <Label htmlFor="marketing" className="text-sm">
                   I agree to receive marketing emails
