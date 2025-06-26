@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 export function useProfileCompletion() {
   const [loading, setLoading] = useState(true);
-  const [profileComplete, setProfileComplete] = useState(false);
+  const [profileComplete, setProfileComplete] = useState(true); // Default to true for emergency access
+  const [userRole, setUserRole] = useState<string>('customer');
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -31,39 +32,42 @@ export function useProfileCompletion() {
           .eq('auth_user_id', user.id)
           .single();
 
-        if (error) {
-          console.error('Profile check error:', error);
+        if (error || !profile) {
+          console.log('Profile check error or no profile found:', error);
+          // Allow access with defaults instead of blocking
+          setProfileComplete(true);
+          setUserRole('customer');
           setLoading(false);
           return;
         }
 
-        if (!profile) {
-          setLoading(false);
-          return;
-        }
+        // Use active_role if available, otherwise fall back to role, then default to customer
+        const resolvedRole = profile.active_role || profile.role || 'customer';
+        setUserRole(resolvedRole);
 
-        const userRole = profile.active_role || profile.role;
+        // Check if profile is actually complete
+        const isComplete = profile.profile_completed === true;
+        setProfileComplete(isComplete);
 
-        // Check if profile is complete
-        if (!profile.profile_completed) {
-          if (userRole === 'customer') {
-            navigate('/complete-profile/customer', { replace: true });
-            return;
-          } else if (userRole === 'provider') {
-            // For providers, check if basic profile is complete
-            if (!profile.basic_profile_completed) {
-              navigate('/complete-profile/provider', { replace: true });
+        // Only redirect to completion if profile is severely incomplete AND user is trying to access protected features
+        if (!isComplete && !profile.basic_profile_completed) {
+          const protectedPaths = ['/post-task', '/offers', '/favorites'];
+          if (protectedPaths.some(path => location.pathname.startsWith(path))) {
+            if (resolvedRole === 'customer') {
+              navigate('/complete-profile/customer', { replace: true });
               return;
-            } else {
-              navigate('/complete-profile/provider/verify', { replace: true });
+            } else if (resolvedRole === 'provider') {
+              navigate('/complete-profile/provider', { replace: true });
               return;
             }
           }
         }
 
-        setProfileComplete(true);
       } catch (error) {
         console.error('Profile completion check error:', error);
+        // Allow access on error instead of blocking
+        setProfileComplete(true);
+        setUserRole('customer');
       } finally {
         setLoading(false);
       }
@@ -72,5 +76,5 @@ export function useProfileCompletion() {
     checkProfileCompletion();
   }, [navigate, location.pathname]);
 
-  return { loading, profileComplete };
+  return { loading, profileComplete, userRole };
 }

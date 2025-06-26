@@ -39,23 +39,33 @@ export default function RequireRole({ children, allowedRoles, redirectTo = "/" }
         }
 
         // For non-admin users, get their role from app_users table
-        const { data: profile } = await supabase
+        const { data: profile, error } = await supabase
           .from("app_users")
-          .select("role")
+          .select("role, active_role")
           .eq("auth_user_id", user.id)
           .single();
 
-        if (!profile) {
-          toast({
-            title: "Access Error",
-            description: "Unable to verify your permissions",
-            variant: "destructive"
-          });
-          navigate(redirectTo, { replace: true });
+        if (error || !profile) {
+          console.log('Role check error or no profile:', error);
+          // Default to customer role if we can't determine role
+          const defaultRole = "customer" as Role;
+          const hasRequiredRole = allowedRoles.includes(defaultRole);
+          
+          if (!hasRequiredRole) {
+            toast({
+              title: "Access Denied",
+              description: "You do not have access to this section",
+              variant: "destructive"
+            });
+          }
+          
+          setHasAccess(hasRequiredRole);
+          setLoading(false);
           return;
         }
 
-        const userRole = profile.role as Role;
+        // Use active_role if available, otherwise fall back to role, then default to customer
+        const userRole = (profile.active_role || profile.role || 'customer') as Role;
         const hasRequiredRole = allowedRoles.includes(userRole);
 
         if (!hasRequiredRole) {
@@ -66,7 +76,7 @@ export default function RequireRole({ children, allowedRoles, redirectTo = "/" }
           });
           
           // Smart redirect based on user role
-          const smartRedirect = userRole === "provider" ? "/dashboard" : "/";
+          const smartRedirect = userRole === "provider" ? "/dashboard/provider" : "/dashboard/customer";
           navigate(smartRedirect, { replace: true });
           return;
         }
@@ -74,7 +84,13 @@ export default function RequireRole({ children, allowedRoles, redirectTo = "/" }
         setHasAccess(true);
       } catch (error) {
         console.error("Role check error:", error);
-        navigate(redirectTo, { replace: true });
+        // Allow access with customer role as fallback
+        const hasRequiredRole = allowedRoles.includes("customer");
+        setHasAccess(hasRequiredRole);
+        
+        if (!hasRequiredRole) {
+          navigate("/dashboard/customer", { replace: true });
+        }
       } finally {
         setLoading(false);
       }

@@ -15,10 +15,15 @@ export default function RequireAuth({ children }: RequireAuthProps) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Auth session error:", error);
+          navigate("/auth", { replace: true });
+          return;
+        }
         
         if (!session?.user) {
-          // Silently redirect without showing toast notification
           navigate("/auth", { replace: true });
           return;
         }
@@ -35,7 +40,9 @@ export default function RequireAuth({ children }: RequireAuthProps) {
     checkAuth();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.id);
+      
       if (event === 'SIGNED_OUT' || !session) {
         setAuthenticated(false);
         navigate("/auth", { replace: true });
