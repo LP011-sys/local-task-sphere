@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
@@ -116,59 +115,14 @@ export default function TaskCreationWizard({ onDone }: { onDone?: () => void }) 
 
       console.log("Current auth user:", session.user.id);
 
-      // Ensure app_users record exists
-      let { data: appUser, error: profileError } = await supabase
-        .from("app_users")
-        .select("id")
-        .eq("auth_user_id", session.user.id)
-        .single();
-
-      console.log("App user lookup result:", { appUser, profileError });
-
-      // Create profile if it doesn't exist
-      if (profileError?.code === 'PGRST116') {
-        console.log("Creating app_users profile for:", session.user.id);
-        
-        const { data: newProfile, error: createError } = await supabase
-          .from("app_users")
-          .insert({
-            auth_user_id: session.user.id,
-            role: 'customer',
-            name: session.user.user_metadata?.name || session.user.email || 'User',
-            email: session.user.email || '',
-            preferred_language: 'en',
-            roles: ['customer'],
-            active_role: 'customer'
-          })
-          .select("id")
-          .single();
-
-        if (createError) {
-          console.error("Profile creation failed:", createError);
-          throw new Error("Failed to create user profile");
-        }
-        
-        console.log("Created profile:", newProfile);
-        appUser = newProfile;
-      } else if (profileError) {
-        console.error("Profile lookup failed:", profileError);
-        throw new Error("Failed to get user profile");
-      }
-
-      if (!appUser?.id) {
-        throw new Error("No user profile found");
-      }
-
-      console.log("Using app_users ID:", appUser.id);
-
-      // Prepare task data
+      // Prepare task data with auth.uid() directly
       const selectedBoost = BOOST_OPTIONS.find(opt => opt.value === form.boost);
       const boostExpiresAt = selectedBoost && selectedBoost.duration > 0 
         ? new Date(Date.now() + selectedBoost.duration * 60 * 60 * 1000).toISOString()
         : null;
 
       const taskData = {
-        user_id: appUser.id,
+        user_id: session.user.id, // Use auth.uid() directly
         category: form.category,
         description: form.description,
         location: form.location || null,
