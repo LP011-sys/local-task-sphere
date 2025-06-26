@@ -8,101 +8,73 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 import RoleSelector from "@/components/signup/RoleSelector";
 
 type Role = "customer" | "provider";
 
 export default function AuthPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [name, setName] = useState("");
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    confirmPassword: "",
+    name: "",
+  });
   const [selectedRole, setSelectedRole] = useState<Role>("customer");
   const [loading, setLoading] = useState(false);
-  const [authTimeout, setAuthTimeout] = useState<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
-  const { redirectAfterAuth } = useAuthRedirect();
 
   useEffect(() => {
     // Check if user is already authenticated
     const checkAuth = async () => {
-      console.log('AuthPage: Checking existing auth state');
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        console.log('AuthPage: User already authenticated, redirecting');
-        await redirectAfterAuth();
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          console.log('User already authenticated, redirecting');
+          redirectUser(session.user);
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
       }
     };
     checkAuth();
-  }, [redirectAfterAuth]);
+  }, []);
 
-  // Handle auth state changes for sign-in only
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('AuthPage: Auth state changed:', event);
-      
-      if (event === 'SIGNED_IN' && session?.user) {
-        console.log('AuthPage: User signed in, processing...');
-        
-        // Set timeout protection
-        const timeout = setTimeout(() => {
-          console.warn('AuthPage: Auth processing timeout');
-          setLoading(false);
-          toast.error('Authentication is taking longer than expected. You can try refreshing the page.');
-        }, 10000);
-        
-        setAuthTimeout(timeout);
-        
-        try {
-          await redirectAfterAuth();
-        } catch (error) {
-          console.error('AuthPage: Redirect error:', error);
-          toast.error('Authentication error occurred');
-        } finally {
-          clearTimeout(timeout);
-          setLoading(false);
-        }
-      } else if (event === 'SIGNED_OUT') {
-        setLoading(false);
-        if (authTimeout) {
-          clearTimeout(authTimeout);
-        }
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-      if (authTimeout) {
-        clearTimeout(authTimeout);
-      }
-    };
-  }, [redirectAfterAuth, authTimeout]);
+  const redirectUser = (user: any) => {
+    const userRole = user.user_metadata?.active_role || user.user_metadata?.roles?.[0] || 'customer';
+    
+    if (userRole === "provider") {
+      navigate("/dashboard/provider", { replace: true });
+    } else if (userRole === "admin") {
+      navigate("/admin", { replace: true });
+    } else {
+      navigate("/dashboard/customer", { replace: true });
+    }
+  };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (password !== confirmPassword) {
+    if (formData.password !== formData.confirmPassword) {
       toast.error("Passwords don't match");
       return;
     }
 
-    if (password.length < 6) {
+    if (formData.password.length < 6) {
       toast.error("Password must be at least 6 characters long");
       return;
     }
 
     setLoading(true);
     try {
-      console.log('AuthPage: Signing up user with role:', selectedRole);
+      console.log('Starting sign up process');
       
       const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
+        email: formData.email,
+        password: formData.password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: {
-            name,
+            name: formData.name,
             roles: [selectedRole],
             active_role: selectedRole
           }
@@ -110,37 +82,27 @@ export default function AuthPage() {
       });
 
       if (error) {
-        console.error('AuthPage: Sign up error:', error);
+        console.error('Sign up error:', error);
         throw error;
       }
 
-      console.log('AuthPage: Sign up response:', { 
-        user: data.user?.id, 
-        session: !!data.session, 
-        role: selectedRole 
-      });
+      console.log('Sign up response:', data);
 
       if (data.user && !data.session) {
         toast.success("Account created! Please check your email for a confirmation link.");
         // Reset form
-        setEmail("");
-        setPassword("");
-        setConfirmPassword("");
-        setName("");
+        setFormData({ email: "", password: "", confirmPassword: "", name: "" });
       } else if (data.session) {
-        toast.success("Account created successfully!");
-        // Auth state change will handle redirect
+        toast.success("Account created and logged in!");
+        redirectUser(data.user);
       }
     } catch (error: any) {
-      console.error('AuthPage: Sign up error:', error);
+      console.error('Sign up error:', error);
       
-      // Provide specific error messages
       if (error.message?.includes('already registered')) {
         toast.error("An account with this email already exists. Please sign in instead.");
       } else if (error.message?.includes('invalid email')) {
         toast.error("Please enter a valid email address.");
-      } else if (error.message?.includes('weak password')) {
-        toast.error("Password is too weak. Please choose a stronger password.");
       } else {
         toast.error(error.message || "Failed to create account. Please try again.");
       }
@@ -154,32 +116,37 @@ export default function AuthPage() {
     setLoading(true);
     
     try {
-      console.log('AuthPage: Signing in user');
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      console.log('Starting sign in process');
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
       });
 
       if (error) {
-        console.error('AuthPage: Sign in error:', error);
+        console.error('Sign in error:', error);
         throw error;
       }
 
-      console.log('AuthPage: Sign in successful');
+      console.log('Sign in successful:', data);
       toast.success("Signed in successfully!");
+      redirectUser(data.user);
     } catch (error: any) {
-      console.error('AuthPage: Sign in error:', error);
+      console.error('Sign in error:', error);
       
-      // Provide specific error messages
       if (error.message?.includes('Invalid login credentials')) {
-        toast.error("Invalid email or password. Please check your credentials and try again.");
+        toast.error("Invalid email or password. Please check your credentials.");
       } else if (error.message?.includes('Email not confirmed')) {
-        toast.error("Please check your email and click the confirmation link before signing in.");
+        toast.error("Please check your email and click the confirmation link first.");
       } else {
         toast.error(error.message || "Failed to sign in. Please try again.");
       }
+    } finally {
       setLoading(false);
     }
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -204,8 +171,8 @@ export default function AuthPage() {
                     id="signin-email"
                     type="email"
                     placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
                     required
                     disabled={loading}
                   />
@@ -216,8 +183,8 @@ export default function AuthPage() {
                     id="signin-password"
                     type="password"
                     placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={formData.password}
+                    onChange={(e) => handleInputChange('password', e.target.value)}
                     required
                     disabled={loading}
                   />
@@ -236,8 +203,8 @@ export default function AuthPage() {
                     id="signup-name"
                     type="text"
                     placeholder="Enter your full name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    value={formData.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
                     required
                     disabled={loading}
                   />
@@ -248,8 +215,8 @@ export default function AuthPage() {
                     id="signup-email"
                     type="email"
                     placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
                     required
                     disabled={loading}
                   />
@@ -260,8 +227,8 @@ export default function AuthPage() {
                     id="signup-password"
                     type="password"
                     placeholder="Create a password (min 6 characters)"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={formData.password}
+                    onChange={(e) => handleInputChange('password', e.target.value)}
                     required
                     disabled={loading}
                     minLength={6}
@@ -273,8 +240,8 @@ export default function AuthPage() {
                     id="confirm-password"
                     type="password"
                     placeholder="Confirm your password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    value={formData.confirmPassword}
+                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                     required
                     disabled={loading}
                   />
@@ -295,7 +262,7 @@ export default function AuthPage() {
           {loading && (
             <div className="mt-4 text-center text-sm text-muted-foreground">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mx-auto mb-2"></div>
-              Processing... This may take a moment.
+              Processing your request...
             </div>
           )}
         </CardContent>

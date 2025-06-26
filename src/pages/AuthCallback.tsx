@@ -12,47 +12,46 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        console.log('AuthCallbackPage: Processing email confirmation callback');
+        console.log('AuthCallback: Processing authentication callback');
         console.log('Current URL:', window.location.href);
         
-        // Get the session from URL
+        // Get session from URL hash (for email confirmations)
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('AuthCallbackPage: Error getting session:', error);
+          console.error('AuthCallback: Session error:', error);
           setError('Authentication failed: ' + error.message);
           return;
         }
 
         if (data.session?.user) {
-          console.log('AuthCallbackPage: Email confirmed successfully for user:', data.session.user.id);
-          console.log('AuthCallbackPage: User metadata:', data.session.user.user_metadata);
+          console.log('AuthCallback: User authenticated:', data.session.user.id);
           
-          // Try to create/ensure profile exists
-          await handleProfileCreation(data.session.user);
+          // Ensure user profile exists
+          await ensureUserProfile(data.session.user);
           
-          // Clear URL hash
+          // Clear URL parameters
           window.history.replaceState(null, '', window.location.pathname);
           
           // Redirect based on role
-          await redirectAfterConfirmation(data.session.user);
+          redirectUser(data.session.user);
         } else {
-          console.log('AuthCallbackPage: No session found, redirecting to auth');
+          console.log('AuthCallback: No session found, redirecting to auth');
           navigate('/auth', { replace: true });
         }
       } catch (error) {
-        console.error('AuthCallbackPage: Unexpected error:', error);
+        console.error('AuthCallback: Unexpected error:', error);
         setError('Authentication error occurred');
       } finally {
         setIsProcessing(false);
       }
     };
 
-    const handleProfileCreation = async (user: any) => {
+    const ensureUserProfile = async (user: any) => {
       try {
-        console.log('AuthCallbackPage: Ensuring profile exists for user:', user.id);
+        console.log('AuthCallback: Checking user profile for:', user.id);
         
-        // Check if profile already exists
+        // Check if profile exists
         const { data: existingProfile, error: checkError } = await supabase
           .from('app_users')
           .select('id')
@@ -60,16 +59,16 @@ export default function AuthCallbackPage() {
           .single();
 
         if (checkError && checkError.code !== 'PGRST116') {
-          console.error('AuthCallbackPage: Error checking profile:', checkError);
+          console.error('AuthCallback: Profile check error:', checkError);
           throw checkError;
         }
 
-        // If profile doesn't exist, create it
+        // Create profile if it doesn't exist
         if (!existingProfile) {
           const userRole = user.user_metadata?.active_role || user.user_metadata?.roles?.[0] || 'customer';
           const userRoles = user.user_metadata?.roles || [userRole];
 
-          console.log('AuthCallbackPage: Creating profile with role:', userRole, 'and roles:', userRoles);
+          console.log('AuthCallback: Creating profile with role:', userRole);
 
           const { error: insertError } = await supabase.from('app_users').insert({
             auth_user_id: user.id,
@@ -81,54 +80,49 @@ export default function AuthCallbackPage() {
           });
 
           if (insertError) {
-            console.error('AuthCallbackPage: Profile creation error:', insertError);
-            toast.error('Profile setup incomplete. You can complete it later in settings.');
+            console.error('AuthCallback: Profile creation error:', insertError);
+            // Don't block - user can complete profile later
+            toast.error('Profile setup incomplete. You can complete it in settings.');
           } else {
-            console.log('AuthCallbackPage: Profile created successfully');
+            console.log('AuthCallback: Profile created successfully');
           }
-        } else {
-          console.log('AuthCallbackPage: Profile already exists');
         }
       } catch (error) {
-        console.error('AuthCallbackPage: Error in profile creation:', error);
-        // Don't block user - they can complete profile later
-        toast.error('Profile setup incomplete. You can complete it later in settings.');
+        console.error('AuthCallback: Profile creation error:', error);
+        // Don't block - show warning but allow continuation
+        toast.error('Profile setup incomplete. You can complete it in settings.');
       }
     };
 
-    const redirectAfterConfirmation = async (user: any) => {
+    const redirectUser = (user: any) => {
       try {
-        console.log('AuthCallbackPage: Determining redirect for user:', user.id);
-
-        // Get user role from metadata first (more reliable during email confirmation)
-        let userRole = user.user_metadata?.active_role || user.user_metadata?.roles?.[0] || 'customer';
+        const userRole = user.user_metadata?.active_role || user.user_metadata?.roles?.[0] || 'customer';
         
-        console.log('AuthCallbackPage: Using role from metadata:', userRole);
+        console.log('AuthCallback: Redirecting user with role:', userRole);
 
-        // Redirect based on role
         if (userRole === "provider") {
-          navigate("/complete-profile/provider", { replace: true });
+          navigate("/dashboard/provider", { replace: true });
         } else if (userRole === "admin") {
           navigate("/admin", { replace: true });
         } else {
           navigate("/dashboard/customer", { replace: true });
         }
 
-        toast.success('Email confirmed successfully! Welcome!');
+        toast.success('Welcome back! Email confirmed successfully.');
       } catch (error) {
-        console.error("AuthCallbackPage: Redirect error:", error);
-        // Default redirect on error
+        console.error("AuthCallback: Redirect error:", error);
+        // Default redirect
         navigate("/dashboard/customer", { replace: true });
-        toast.success('Welcome! Please complete your profile if needed.');
+        toast.success('Welcome back!');
       }
     };
 
-    // Set up timeout protection
+    // Set timeout to prevent infinite loading
     const timeout = setTimeout(() => {
-      console.warn('AuthCallbackPage: Processing timeout reached');
+      console.warn('AuthCallback: Processing timeout');
       setError('Email confirmation is taking longer than expected. Please try signing in directly.');
       setIsProcessing(false);
-    }, 15000);
+    }, 10000);
 
     handleAuthCallback();
 
@@ -158,7 +152,6 @@ export default function AuthCallbackPage() {
         <div className="text-center max-w-md">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-lg text-muted-foreground">Confirming your email...</p>
-          <p className="text-sm text-muted-foreground mt-2">This should only take a moment</p>
         </div>
       </div>
     );
