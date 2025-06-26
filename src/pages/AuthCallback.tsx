@@ -52,24 +52,47 @@ export default function AuthCallbackPage() {
       try {
         console.log('AuthCallbackPage: Ensuring profile exists for user:', user.id);
         
-        // Use the new database function for safe profile creation
-        const { error } = await supabase.rpc('get_or_create_user_profile', {
-          user_id: user.id,
-          user_email: user.email,
-          user_name: user.user_metadata?.name || '',
-          user_roles: user.user_metadata?.roles || ['customer'],
-          user_active_role: user.user_metadata?.active_role || user.user_metadata?.roles?.[0] || 'customer'
-        });
+        // Check if profile already exists
+        const { data: existingProfile, error: checkError } = await supabase
+          .from('app_users')
+          .select('id')
+          .eq('auth_user_id', user.id)
+          .single();
 
-        if (error) {
-          console.error('AuthCallbackPage: Profile creation error:', error);
-          toast.error('Profile setup incomplete. You can complete it later in settings.');
+        if (checkError && checkError.code !== 'PGRST116') {
+          console.error('AuthCallbackPage: Error checking profile:', checkError);
+          throw checkError;
+        }
+
+        // If profile doesn't exist, create it
+        if (!existingProfile) {
+          const userRole = user.user_metadata?.active_role || user.user_metadata?.roles?.[0] || 'customer';
+          const userRoles = user.user_metadata?.roles || [userRole];
+
+          console.log('AuthCallbackPage: Creating profile with role:', userRole, 'and roles:', userRoles);
+
+          const { error: insertError } = await supabase.from('app_users').insert({
+            auth_user_id: user.id,
+            email: user.email,
+            name: user.user_metadata?.name || '',
+            roles: userRoles,
+            active_role: userRole,
+            role: userRole // For backward compatibility
+          });
+
+          if (insertError) {
+            console.error('AuthCallbackPage: Profile creation error:', insertError);
+            toast.error('Profile setup incomplete. You can complete it later in settings.');
+          } else {
+            console.log('AuthCallbackPage: Profile created successfully');
+          }
         } else {
-          console.log('AuthCallbackPage: Profile ensured successfully');
+          console.log('AuthCallbackPage: Profile already exists');
         }
       } catch (error) {
         console.error('AuthCallbackPage: Error in profile creation:', error);
         // Don't block user - they can complete profile later
+        toast.error('Profile setup incomplete. You can complete it later in settings.');
       }
     };
 

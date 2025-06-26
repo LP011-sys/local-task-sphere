@@ -1330,6 +1330,16 @@ export type Database = {
           total_revenue: number
         }[]
       }
+      get_or_create_user_profile: {
+        Args: {
+          user_id: string
+          user_email: string
+          user_name?: string
+          user_roles?: string[]
+          user_active_role?: string
+        }
+        Returns: string
+      }
       get_proj4_from_srid: {
         Args: { "": number }
         Returns: string
